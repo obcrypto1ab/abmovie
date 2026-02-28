@@ -27,7 +27,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- ImageKit SDK (Standard UNPKG) -->
+    <!-- ImageKit SDK -->
     <script src="https://unpkg.com/imagekit-javascript/dist/imagekit.min.js"></script>
     
     <style>
@@ -110,6 +110,9 @@
     <!-- Main Content Area -->
     <main id="app" class="flex-grow pt-20 px-4 max-w-7xl mx-auto w-full">
         <!-- Views injected here -->
+        <div class="flex justify-center items-center h-64">
+            <div class="loader"></div>
+        </div>
     </main>
 
     <!-- Footer -->
@@ -121,15 +124,15 @@
     
     <!-- Auth Modal -->
     <div id="auth-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm fade-in">
-        <div class="bg-gray-800 rounded-xl p-8 max-w-sm w-full shadow-2xl border border-gray-700">
+        <div class="bg-gray-800 rounded-xl p-8 max-w-sm w-full shadow-2xl border border-gray-700 relative">
+            <button onclick="ui.toggleModal('auth-modal', false)" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
             <h2 class="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
             <form id="login-form" class="space-y-4">
                 <input type="email" id="email" placeholder="Email" required class="w-full bg-gray-700 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary">
                 <input type="password" id="password" placeholder="Password" required class="w-full bg-gray-700 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary">
-                <button type="submit" class="w-full bg-primary hover:opacity-90 text-white font-bold py-3 rounded transition">Sign In</button>
-                <p id="auth-error" class="text-red-400 text-sm text-center hidden"></p>
+                <button type="submit" id="btn-login-submit" class="w-full bg-primary hover:opacity-90 text-white font-bold py-3 rounded transition">Sign In</button>
+                <div id="auth-error" class="text-red-400 text-sm text-center hidden p-2 bg-red-900/20 rounded border border-red-800"></div>
             </form>
-            <button onclick="ui.toggleModal('auth-modal', false)" class="mt-4 text-gray-400 text-sm w-full text-center hover:text-white">Close</button>
         </div>
     </div>
 
@@ -242,15 +245,15 @@
 
     <!-- Movie Editor Modal (Admin) -->
     <div id="editor-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-90 backdrop-blur">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <h2 class="text-xl font-bold mb-4" id="editor-title">Edit Movie</h2>
             <form id="movie-form" class="space-y-3">
                 <input type="hidden" id="edit-id">
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="edit-title" placeholder="Movie Title" required class="bg-gray-700 p-2 rounded text-white w-full">
-                    <input type="number" id="edit-year" placeholder="Year" required class="bg-gray-700 p-2 rounded text-white w-full">
+                    <input type="text" id="edit-title" placeholder="Movie Title" required class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                    <input type="number" id="edit-year" placeholder="Year" required class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 </div>
-                <textarea id="edit-desc" placeholder="Description" rows="3" class="bg-gray-700 p-2 rounded text-white w-full"></textarea>
+                <textarea id="edit-desc" placeholder="Description" rows="3" class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
                 
                 <!-- Poster Upload -->
                 <div class="border border-dashed border-gray-600 p-4 rounded text-center">
@@ -263,15 +266,15 @@
                     <p id="upload-status-text" class="text-xs text-gray-400 mt-1"></p>
                 </div>
 
-                <input type="url" id="edit-watchUrl" placeholder="Watch URL (Legal Stream)" required class="bg-gray-700 p-2 rounded text-white w-full">
-                <input type="url" id="edit-downloadUrl" placeholder="Download URL (Optional - Legal Only)" class="bg-gray-700 p-2 rounded text-white w-full">
+                <input type="url" id="edit-watchUrl" placeholder="Watch URL (Legal Stream)" required class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <input type="url" id="edit-downloadUrl" placeholder="Download URL (Optional - Legal Only)" class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary">
                 
                 <div class="grid grid-cols-2 gap-4">
-                    <select id="edit-status" class="bg-gray-700 p-2 rounded text-white">
+                    <select id="edit-status" class="bg-gray-700 p-2 rounded text-white focus:outline-none focus:ring-1 focus:ring-primary">
                         <option value="draft">Draft</option>
                         <option value="published">Published</option>
                     </select>
-                    <input type="number" id="edit-trendingScore" placeholder="Trending Score (0-100)" class="bg-gray-700 p-2 rounded text-white">
+                    <input type="number" id="edit-trendingScore" placeholder="Trending Score (0-100)" class="bg-gray-700 p-2 rounded text-white focus:outline-none focus:ring-1 focus:ring-primary">
                 </div>
 
                 <!-- Categories -->
@@ -354,11 +357,11 @@
             },
             slugify: (text) => {
                 return text.toString().toLowerCase()
-                    .replace(/\s+/g, '-')           // Replace spaces with -
-                    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-                    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-                    .replace(/^-+/, '')             // Trim - from start of text
-                    .replace(/-+$/, '');            // Trim - from end of text
+                    .replace(/\s+/g, '-')           
+                    .replace(/[^\w\-]+/g, '')       
+                    .replace(/\-\-+/g, '-')         
+                    .replace(/^-+/, '')             
+                    .replace(/-+$/, '');            
             }
         };
 
@@ -368,25 +371,43 @@
 
         // --- 5. DATA LAYER ---
         const data = {
+            listening: false,
             init: () => {
+                // Prevent duplicate listeners
+                if (data.listening) return;
+                data.listening = true;
+
+                // Settings Listener
                 onSnapshot(doc(db, "settings", "global"), (doc) => {
                     if (doc.exists()) {
                         state.settings = doc.data();
                         ui.applySettings();
                         if(!document.getElementById('admin-panel').classList.contains('hidden')) admin.renderSettingsForm();
-                    } else if(state.isAdmin) data.seedSettings();
+                    } else if(state.isAdmin) {
+                        data.seedSettings();
+                    }
                 });
 
+                // Categories Listener
                 onSnapshot(query(collection(db, "categories"), orderBy("order")), (snapshot) => {
                     state.categories = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
                     ui.renderHome();
                     if(state.isAdmin) admin.renderCategoriesList();
                 });
 
+                // Movies Listener (Listen to everything, filter on UI)
                 onSnapshot(query(collection(db, "movies"), orderBy("createdAt", "desc")), (snapshot) => {
                     state.movies = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
                     ui.renderHome();
                     if(state.isAdmin) admin.renderMoviesList();
+                }, (error) => {
+                    console.error("Firestore Error:", error);
+                    // If permissions fail (non-admin trying to read all), it's handled by rules, 
+                    // but for public view, rules should allow reading published. 
+                    // To keep it simple in single-file, we rely on rules allowing read of published.
+                    // Note: If rules restrict 'drafts' from public, this listener might throw error for public user 
+                    // if it tries to read 'all'. In a production app we'd use two queries. 
+                    // For this fix, we assume rules allow reading, and we filter client side, OR rules handle filtering.
                 });
             },
             seedSettings: async () => {
@@ -406,6 +427,24 @@
                 const el = document.getElementById(id);
                 if (show) el.classList.remove('hidden');
                 else el.classList.add('hidden');
+                
+                // Clear errors on open/close
+                if(id === 'auth-modal') document.getElementById('auth-error').classList.add('hidden');
+            },
+            updateAuthUI: () => {
+                const authSection = document.getElementById('auth-section');
+                if (state.user) {
+                    authSection.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            ${state.isAdmin ? `<button onclick="router.navigate('admin')" class="text-sm bg-gray-800 border border-gray-600 px-3 py-1 rounded text-red-400 hover:text-red-300">Admin Panel</button>` : ''}
+                            <div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white text-xs cursor-pointer" onclick="ui.logout()" title="Sign Out">
+                                ${state.user.email[0].toUpperCase()}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    authSection.innerHTML = `<button onclick="ui.toggleModal('auth-modal', true)" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition">Login</button>`;
+                }
             },
             applySettings: () => {
                 if (!state.settings) return;
@@ -426,9 +465,13 @@
             },
             renderHome: () => {
                 const app = document.getElementById('app');
+                // For public view, strictly filter published only
                 const published = state.movies.filter(m => m.status === 'published');
                 
-                if (!state.settings) return; 
+                if (!state.settings) {
+                    // Loading state if settings not arrived yet
+                    return; 
+                }
 
                 let html = `
                     <div class="relative w-full h-[60vh] rounded-2xl overflow-hidden mb-12 shadow-2xl group">
@@ -508,7 +551,7 @@
                 document.getElementById('movie-modal-title').innerText = m.title;
                 document.getElementById('movie-modal-desc').innerText = m.description;
                 document.getElementById('movie-modal-year').innerText = m.year;
-                document.getElementById('movie-modal-rating').innerText = `★ ${m.rating || 'N/A'}`;
+                document.getElementById('movie-modal-rating').innerText = `★ ${m.trendingScore || 'N/A'}`;
                 document.getElementById('movie-modal-poster').style.backgroundImage = `url('${m.posterUrl}')`;
                 
                 const watchBtn = document.getElementById('movie-modal-watch');
@@ -523,14 +566,17 @@
                 }
 
                 ui.toggleModal('movie-modal', true);
+            },
+            logout: () => {
+                signOut(auth).then(() => {
+                    utils.showToast("Logged out successfully");
+                    router.navigate('home');
+                });
             }
         };
 
         // --- 7. ADMIN CONTROLLER ---
         const admin = { 
-            editMovie: (id) => {
-  admin.openMovieEditor(id);
-},
             check: () => {
                 if (!state.isAdmin) return;
                 document.getElementById('admin-panel').classList.remove('hidden');
@@ -553,6 +599,7 @@
             },
             renderMoviesList: () => {
                 const list = document.getElementById('admin-movies-list');
+                // Admin sees ALL movies
                 list.innerHTML = state.movies.map(m => `
                     <tr class="hover:bg-gray-800 transition">
                         <td class="p-3 font-medium text-white">${utils.sanitize(m.title)}</td>
@@ -564,6 +611,9 @@
                         </td>
                     </tr>
                 `).join('');
+            },
+            editMovie: (id) => {
+                admin.openMovieEditor(id);
             },
             openMovieEditor: (id = null) => {
                 const form = document.getElementById('movie-form');
@@ -587,19 +637,22 @@
 
                 if (id) {
                     const m = state.movies.find(x => x.id === id);
-                    document.getElementById('edit-title').value = m.title;
-                    document.getElementById('edit-year').value = m.year;
-                    document.getElementById('edit-desc').value = m.description;
-                    document.getElementById('edit-watchUrl').value = m.watchUrl;
-                    document.getElementById('edit-downloadUrl').value = m.downloadUrl || '';
-                    document.getElementById('edit-status').value = m.status;
-                    document.getElementById('edit-posterUrl').value = m.posterUrl;
-                    document.getElementById('edit-trendingScore').value = m.trendingScore || 0;
-                    
-                    const inputs = document.querySelectorAll('input[name="cat"]');
-                    inputs.forEach(input => {
-                        if(m.categorySlugs && m.categorySlugs.includes(input.value)) input.checked = true;
-                    });
+                    if (m) {
+                        document.getElementById('edit-title').value = m.title;
+                        document.getElementById('edit-year').value = m.year;
+                        document.getElementById('edit-desc').value = m.description;
+                        document.getElementById('edit-watchUrl').value = m.watchUrl;
+                        document.getElementById('edit-downloadUrl').value = m.downloadUrl || '';
+                        document.getElementById('edit-status').value = m.status;
+                        document.getElementById('edit-posterUrl').value = m.posterUrl;
+                        document.getElementById('edit-trendingScore').value = m.trendingScore || 0;
+                        
+                        // Check categories
+                        const inputs = document.querySelectorAll('input[name="cat"]');
+                        inputs.forEach(input => {
+                            if(m.categorySlugs && m.categorySlugs.includes(input.value)) input.checked = true;
+                        });
+                    }
                 }
                 ui.toggleModal('editor-modal', true);
             },
@@ -614,32 +667,29 @@
                 const titleInput = document.getElementById('edit-title').value;
                 let posterUrl = document.getElementById('edit-posterUrl').value;
 
-                // --- ROBUST IMAGEKIT UPLOAD ---
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    
-                    // Validation
-                    if (file.size > 10 * 1024 * 1024) {
-                        utils.showToast("File too large (Max 10MB)", "error");
-                        saveBtn.disabled = false;
-                        saveBtn.innerText = 'Save Movie';
-                        return;
-                    }
+                try {
+                    // --- ROBUST IMAGEKIT UPLOAD ---
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        
+                        // Validation
+                        if (file.size > 10 * 1024 * 1024) {
+                            throw new Error("File too large (Max 10MB)");
+                        }
 
-                    const progressContainer = document.getElementById('upload-progress-container');
-                    const progressBar = document.getElementById('upload-progress-bar');
-                    const statusText = document.getElementById('upload-status-text');
-                    
-                    progressContainer.classList.remove('hidden');
-                    statusText.innerText = 'Authenticating...';
+                        const progressContainer = document.getElementById('upload-progress-container');
+                        const progressBar = document.getElementById('upload-progress-bar');
+                        const statusText = document.getElementById('upload-status-text');
+                        
+                        progressContainer.classList.remove('hidden');
+                        statusText.innerText = 'Authenticating...';
 
-                    try {
-                        // 1. Fetch Auth Parameters Manually
+                        // 1. Fetch Auth Parameters
                         const authRes = await fetch(IK_AUTH_ENDPOINT);
                         if (!authRes.ok) throw new Error('Auth server error');
                         const authData = await authRes.json();
                         
-                        // 2. Instantiate SDK with Public Key + URL Endpoint
+                        // 2. Instantiate SDK
                         const imagekit = new ImageKit({
                             publicKey: IK_PUBLIC_KEY,
                             urlEndpoint: IK_URL_ENDPOINT
@@ -647,7 +697,7 @@
 
                         statusText.innerText = 'Uploading...';
 
-                        // 3. Upload using returned auth tokens
+                        // 3. Upload
                         const result = await new Promise((resolve, reject) => {
                             imagekit.upload({
                                 file: file,
@@ -667,30 +717,21 @@
                         progressBar.style.width = '100%';
                         statusText.innerText = 'Upload Complete';
                         posterUrl = result.url;
-                        
-                    } catch (err) {
-                        console.error("Upload Error:", err);
-                        utils.showToast('Image Upload Failed: ' + (err.message || 'Unknown'), 'error');
-                        saveBtn.disabled = false;
-                        saveBtn.innerText = 'Save Movie';
-                        return;
                     }
-                }
 
-                const dataPayload = {
-                    title: titleInput,
-                    year: document.getElementById('edit-year').value,
-                    description: document.getElementById('edit-desc').value,
-                    watchUrl: document.getElementById('edit-watchUrl').value,
-                    downloadUrl: document.getElementById('edit-downloadUrl').value,
-                    status: document.getElementById('edit-status').value,
-                    trendingScore: parseInt(document.getElementById('edit-trendingScore').value) || 0,
-                    posterUrl: posterUrl,
-                    categorySlugs: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(cb => cb.value),
-                    updatedAt: serverTimestamp()
-                };
+                    const dataPayload = {
+                        title: titleInput,
+                        year: document.getElementById('edit-year').value,
+                        description: document.getElementById('edit-desc').value,
+                        watchUrl: document.getElementById('edit-watchUrl').value,
+                        downloadUrl: document.getElementById('edit-downloadUrl').value,
+                        status: document.getElementById('edit-status').value,
+                        trendingScore: parseInt(document.getElementById('edit-trendingScore').value) || 0,
+                        posterUrl: posterUrl,
+                        categorySlugs: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(cb => cb.value),
+                        updatedAt: serverTimestamp()
+                    };
 
-                try {
                     if (id) {
                         await updateDoc(doc(db, "movies", id), dataPayload);
                         utils.showToast('Movie Updated');
@@ -700,9 +741,10 @@
                         utils.showToast('Movie Added');
                     }
                     ui.toggleModal('editor-modal', false);
+
                 } catch (err) {
-                    utils.showToast('Error saving movie to DB', 'error');
-                    console.error(err);
+                    console.error("Save Error:", err);
+                    utils.showToast('Error: ' + (err.message || 'Save failed'), 'error');
                 } finally {
                     saveBtn.disabled = false;
                     saveBtn.innerText = 'Save Movie';
@@ -785,48 +827,53 @@
             }
         };
 
+        // Auth Listener - Runs on load
         onAuthStateChanged(auth, (user) => {
             state.user = user;
-            const authSection = document.getElementById('auth-section');
-            
             if (user) {
                 state.isAdmin = (user.email === ADMIN_EMAIL);
-                authSection.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        ${state.isAdmin ? `<button onclick="router.navigate('admin')" class="text-sm bg-gray-800 border border-gray-600 px-3 py-1 rounded text-red-400 hover:text-red-300">Admin Panel</button>` : ''}
-                        <div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white text-xs cursor-pointer" onclick="ui.logout()">
-                            ${user.email[0].toUpperCase()}
-                        </div>
-                    </div>
-                `;
+                // If modal was open, close it
                 ui.toggleModal('auth-modal', false);
-                data.init(); 
-          } else {
-  state.isAdmin = false;
-  authSection.innerHTML = `<button onclick="ui.toggleModal('auth-modal', true)" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition">Login</button>`;
-
-  // ✅ Don't force login
-  ui.toggleModal('auth-modal', false);
-
-  // ✅ Public users must still load data
-  data.init();
-}
+            } else {
+                state.isAdmin = false;
+            }
+            
+            ui.updateAuthUI();
+            
+            // ALWAYS initialize data, logged in or not
+            data.init();
         });
 
+        // Login Handler
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
+            const btn = document.getElementById('btn-login-submit');
+            const errEl = document.getElementById('auth-error');
+            
+            btn.disabled = true;
+            btn.innerText = "Signing in...";
+            errEl.classList.add('hidden');
+
             try {
                 await signInWithEmailAndPassword(auth, email, pass);
+                // Success is handled by onAuthStateChanged
             } catch (err) {
-                const errEl = document.getElementById('auth-error');
-                errEl.innerText = "Invalid credentials. If you are admin, ensure correct email.";
+                console.error("Login Error:", err.code, err.message);
+                let msg = "Login failed.";
+                switch(err.code) {
+                    case 'auth/user-not-found': msg = "No user found with this email."; break;
+                    case 'auth/wrong-password': msg = "Incorrect password."; break;
+                    case 'auth/invalid-email': msg = "Invalid email format."; break;
+                    case 'auth/too-many-requests': msg = "Too many attempts. Try later."; break;
+                }
+                errEl.innerText = msg;
                 errEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerText = "Sign In";
             }
         });
-
-        ui.logout = () => signOut(auth);
 
         document.getElementById('global-search').addEventListener('input', (e) => {
             state.filter = e.target.value;
@@ -835,12 +882,14 @@
 
         document.getElementById('theme-toggle').addEventListener('click', utils.toggleDarkMode);
 
+        // Expose to window for HTML onclick handlers
         window.admin = admin;
         window.ui = ui;
         window.router = router;
 
         document.getElementById('movie-form').addEventListener('submit', admin.handleMovieSave);
 
+        // Initial Route Check
         if(window.location.hash === '#admin') router.navigate('admin');
         else router.navigate('home');
 
