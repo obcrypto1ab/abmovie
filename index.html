@@ -798,11 +798,16 @@
                 `;
                 ui.toggleModal('auth-modal', false);
                 data.init(); 
-            } else {
-                state.isAdmin = false;
-                authSection.innerHTML = `<button onclick="ui.toggleModal('auth-modal', true)" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition">Login</button>`;
-                ui.toggleModal('auth-modal', true); 
-            }
+           } else {
+  state.isAdmin = false;
+  authSection.innerHTML = `<button onclick="ui.toggleModal('auth-modal', true)" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition">Login</button>`;
+
+  // ✅ Public users can browse without login
+  ui.toggleModal('auth-modal', false);
+
+  // ✅ Start listeners even for public users
+  data.init();
+}
         });
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
