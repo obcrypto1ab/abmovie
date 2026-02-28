@@ -1,32 +1,42 @@
-const ImageKit = require("imagekit");
+import ImageKit from 'imagekit';
 
-const imagekit = new ImageKit({
-    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
-    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
-    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
-});
+export default async function handler(req, res) {
+  // 1. Handle CORS (Allow all origins or specific domain)
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-export default function handler(req, res) {
-    // Enable CORS for your domain
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*'); 
-    // In production, replace '*' with your actual domain
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+  // 2. Handle Preflight Options
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
+  // 3. Ensure Environment Variables exist
+  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  const publicKey = process.env.IMAGEKIT_PUBLIC_KEY;
+  const urlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT;
 
-    try {
-        const authenticationParameters = imagekit.getAuthenticationParameters();
-        res.status(200).json(authenticationParameters);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Auth generation failed" });
-    }
+  if (!privateKey || !publicKey || !urlEndpoint) {
+    console.error('Missing ImageKit Environment Variables');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
+  try {
+    // 4. Initialize ImageKit Node SDK
+    const imagekit = new ImageKit({
+      publicKey: publicKey,
+      privateKey: privateKey,
+      urlEndpoint: urlEndpoint
+    });
+
+    // 5. Generate Auth Params
+    const authenticationParameters = imagekit.getAuthenticationParameters();
+
+    // 6. Return JSON
+    return res.status(200).json(authenticationParameters);
+
+  } catch (error) {
+    console.error('ImageKit Auth Error:', error);
+    return res.status(500).json({ error: 'Authentication failed' });
+  }
 }
