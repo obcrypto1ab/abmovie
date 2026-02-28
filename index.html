@@ -395,20 +395,26 @@
                     if(state.isAdmin) admin.renderCategoriesList();
                 });
 
-                // Movies Listener (Listen to everything, filter on UI)
-                onSnapshot(query(collection(db, "movies"), orderBy("createdAt", "desc")), (snapshot) => {
-                    state.movies = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-                    ui.renderHome();
-                    if(state.isAdmin) admin.renderMoviesList();
-                }, (error) => {
-                    console.error("Firestore Error:", error);
-                    // If permissions fail (non-admin trying to read all), it's handled by rules, 
-                    // but for public view, rules should allow reading published. 
-                    // To keep it simple in single-file, we rely on rules allowing read of published.
-                    // Note: If rules restrict 'drafts' from public, this listener might throw error for public user 
-                    // if it tries to read 'all'. In a production app we'd use two queries. 
-                    // For this fix, we assume rules allow reading, and we filter client side, OR rules handle filtering.
-                });
+                // Movies Listener (Admin sees all, Public sees only published)
+let moviesQ;
+
+if (state.isAdmin) {
+  moviesQ = query(collection(db, "movies"), orderBy("createdAt", "desc"));
+} else {
+  moviesQ = query(
+    collection(db, "movies"),
+    where("status", "==", "published"),
+    orderBy("createdAt", "desc")
+  );
+}
+
+onSnapshot(moviesQ, (snapshot) => {
+  state.movies = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  ui.renderHome();
+  if (state.isAdmin) admin.renderMoviesList();
+}, (error) => {
+  console.error("Movies listener error:", error);
+});
             },
             seedSettings: async () => {
                 await setDoc(doc(db, "settings", "global"), {
