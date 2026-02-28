@@ -527,7 +527,10 @@
         };
 
         // --- 7. ADMIN CONTROLLER ---
-        const admin = {
+        const admin = { 
+            editMovie: (id) => {
+  admin.openMovieEditor(id);
+},
             check: () => {
                 if (!state.isAdmin) return;
                 document.getElementById('admin-panel').classList.remove('hidden');
@@ -798,14 +801,14 @@
                 `;
                 ui.toggleModal('auth-modal', false);
                 data.init(); 
-           } else {
+          } else {
   state.isAdmin = false;
   authSection.innerHTML = `<button onclick="ui.toggleModal('auth-modal', true)" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition">Login</button>`;
 
-  // ✅ Public users can browse without login
+  // ✅ Don't force login
   ui.toggleModal('auth-modal', false);
 
-  // ✅ Start listeners even for public users
+  // ✅ Public users must still load data
   data.init();
 }
         });
