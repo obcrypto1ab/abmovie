@@ -1,53 +1,31 @@
-// /api/imagekit-auth.js
 const ImageKit = require("imagekit");
 
-module.exports = async (req, res) => {
-  // CORS
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+const imagekit = new ImageKit({
+  publicKey: "public_Wt+RjZXgdesltZmb4M/5SO8ncZk=",
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY, // Ensure this is set in Vercel Env Variables
+  urlEndpoint: "https://ik.imagekit.io/4maqtfplt"
+});
 
-  // Preflight
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+export default function handler(req, res) {
+  // CORS Handling for browser fetch
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Or set to your Vercel domain
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Read env vars
-  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
-  const publicKey = process.env.IMAGEKIT_PUBLIC_KEY;
-  const urlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT;
-
-  const missing = [];
-  if (!privateKey) missing.push("IMAGEKIT_PRIVATE_KEY");
-  if (!publicKey) missing.push("IMAGEKIT_PUBLIC_KEY");
-  if (!urlEndpoint) missing.push("IMAGEKIT_URL_ENDPOINT");
-
-  if (missing.length) {
-    return res.status(500).json({
-      error: "Missing ImageKit environment variables",
-      missing
-    });
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
   }
 
   try {
-    const imagekit = new ImageKit({
-      publicKey,
-      privateKey,
-      urlEndpoint
-    });
-
-    const auth = imagekit.getAuthenticationParameters();
-    // { token, expire, signature }
-    return res.status(200).json(auth);
-  } catch (err) {
-    console.error("ImageKit auth crash:", err);
-    return res.status(500).json({
-      error: "ImageKit auth failed",
-      message: err?.message || "unknown"
-    });
+    const authenticationParameters = imagekit.getAuthenticationParameters();
+    res.status(200).json(authenticationParameters);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Auth failed" });
   }
-};
+}
