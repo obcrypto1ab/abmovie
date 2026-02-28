@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamVault - Legal Movie Library</title>
+    <title>StreamVault - Loading...</title>
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Tailwind Config -->
@@ -14,11 +14,14 @@
                 extend: {
                     colors: {
                         primary: 'var(--primary-color)',
-                        accent: 'var(--accent-color)',
                         surface: 'var(--surface-color)',
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
+                    },
+                    aspectRatio: {
+                        'poster': '2 / 3',
+                        'video': '16 / 9'
                     }
                 }
             }
@@ -26,14 +29,12 @@
     </script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
     <!-- ImageKit SDK -->
     <script src="https://unpkg.com/imagekit-javascript/dist/imagekit.min.js"></script>
     
     <style>
         :root {
             --primary-color: #3b82f6;
-            --accent-color: #8b5cf6;
             --surface-color: #1f2937;
         }
         body { font-family: 'Inter', sans-serif; }
@@ -46,7 +47,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .glass-dark {
-            background: rgba(17, 24, 39, 0.7);
+            background: rgba(17, 24, 39, 0.85);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
@@ -67,8 +68,6 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Transitions */
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -80,8 +79,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <!-- Logo -->
-                <div class="flex-shrink-0 cursor-pointer" onclick="router.navigate('home')">
-                    <span id="nav-logo" class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                <div class="flex-shrink-0 cursor-pointer flex items-center gap-2" onclick="router.navigate('home')">
+                    <img id="nav-logo-img" class="h-8 hidden" alt="Logo">
+                    <span id="nav-logo-text" class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
                         StreamVault
                     </span>
                 </div>
@@ -89,35 +89,38 @@
                 <!-- Search -->
                 <div class="hidden md:block flex-1 max-w-md mx-8" id="search-container">
                     <div class="relative">
-                        <input type="text" id="global-search" placeholder="Search legal movies..." 
+                        <input type="text" id="global-search" placeholder="Search..." 
                             class="w-full bg-gray-800 text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary border border-gray-700">
                     </div>
                 </div>
 
                 <!-- Right Menu -->
                 <div class="flex items-center gap-4">
-                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-700 transition">
-                        🌙
-                    </button>
-                    <div id="auth-section">
-                        <!-- Injected via JS -->
-                    </div>
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-700 transition">🌙</button>
+                    <div id="auth-section"><!-- Injected via JS --></div>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content Area -->
-    <main id="app" class="flex-grow pt-20 px-4 max-w-7xl mx-auto w-full">
-        <!-- Views injected here -->
+    <main id="app" class="flex-grow pt-20 px-4 max-w-7xl mx-auto w-full min-h-screen">
         <div class="flex justify-center items-center h-64">
             <div class="loader"></div>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer id="footer" class="border-t border-gray-800 mt-12 py-8 text-center text-gray-500 text-sm hidden">
-        <p>&copy; <span id="footer-year"></span> <span id="footer-site-name">StreamVault</span>. All content is legally licensed or public domain.</p>
+    <footer id="footer" class="border-t border-gray-800 mt-12 bg-gray-900 pt-12 pb-8 hidden">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col items-center">
+            <!-- Social Links -->
+            <div id="social-links-container" class="flex gap-6 mb-8 hidden">
+                <!-- Injected via JS -->
+            </div>
+            
+            <p class="text-gray-500 text-sm mb-2">&copy; <span id="footer-year"></span> <span id="footer-site-name">StreamVault</span>.</p>
+            <p class="text-gray-600 text-xs">All content is legally licensed or public domain.</p>
+        </div>
     </footer>
 
     <!-- Modals -->
@@ -126,19 +129,45 @@
     <div id="auth-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm fade-in">
         <div class="bg-gray-800 rounded-xl p-8 max-w-sm w-full shadow-2xl border border-gray-700 relative">
             <button onclick="ui.toggleModal('auth-modal', false)" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
-            <h2 class="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
-            <form id="login-form" class="space-y-4">
-                <input type="email" id="email" placeholder="Email" required class="w-full bg-gray-700 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary">
+            <h2 id="auth-title" class="text-2xl font-bold mb-2 text-center">Sign In</h2>
+            <p id="auth-subtitle" class="text-center text-gray-400 text-sm mb-6">Welcome back to the library</p>
+            
+            <form id="auth-form" class="space-y-4">
+                <input type="email" id="email" placeholder="Email Address" required class="w-full bg-gray-700 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary">
                 <input type="password" id="password" placeholder="Password" required class="w-full bg-gray-700 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary">
-                <button type="submit" id="btn-login-submit" class="w-full bg-primary hover:opacity-90 text-white font-bold py-3 rounded transition">Sign In</button>
+                
+                <button type="submit" id="btn-auth-submit" class="w-full bg-primary hover:opacity-90 text-white font-bold py-3 rounded transition">Sign In</button>
+                
                 <div id="auth-error" class="text-red-400 text-sm text-center hidden p-2 bg-red-900/20 rounded border border-red-800"></div>
             </form>
+
+            <div class="mt-4 text-center space-y-2">
+                <button onclick="authManager.toggleMode()" id="auth-toggle-btn" class="text-sm text-blue-400 hover:text-blue-300">New here? Create an account</button>
+                <div class="block">
+                    <button onclick="authManager.forgotPassword()" class="text-xs text-gray-500 hover:text-gray-300">Forgot Password?</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notif-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center bg-black bg-opacity-90 backdrop-blur-md fade-in">
+        <div class="bg-gray-900 rounded-2xl max-w-lg w-full mx-4 shadow-2xl border border-gray-700 overflow-hidden relative">
+            <button onclick="ui.closeNotification()" class="absolute top-4 right-4 text-gray-400 hover:text-white z-10 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
+            <div id="notif-image-container" class="h-48 w-full bg-cover bg-center hidden"></div>
+            <div class="p-8 text-center">
+                <h2 id="notif-title" class="text-2xl font-bold text-white mb-3"></h2>
+                <p id="notif-message" class="text-gray-300 mb-6 leading-relaxed"></p>
+                <a id="notif-link" href="#" target="_blank" class="hidden inline-block bg-primary hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full transition shadow-lg shadow-blue-500/30">
+                    Learn More
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Movie Details Modal -->
     <div id="movie-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-90 backdrop-blur-md fade-in">
-        <div class="bg-gray-900 rounded-2xl max-w-4xl w-full mx-4 overflow-hidden shadow-2xl border border-gray-700 flex flex-col md:flex-row max-h-[90vh]">
+        <div class="bg-gray-900 rounded-2xl max-w-5xl w-full mx-4 overflow-hidden shadow-2xl border border-gray-700 flex flex-col md:flex-row max-h-[90vh]">
             <div id="movie-modal-poster" class="w-full md:w-1/3 bg-cover bg-center h-64 md:h-auto"></div>
             <div class="p-8 w-full md:w-2/3 flex flex-col overflow-y-auto">
                 <div class="flex justify-between items-start">
@@ -156,14 +185,14 @@
                         ▶ Watch Now
                     </a>
                     <a id="movie-modal-download" href="#" target="_blank" class="hidden block w-full text-center border border-gray-600 hover:bg-gray-800 text-white py-3 rounded-lg transition">
-                        ⬇ Download (Legal)
+                        ⬇ Download
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Admin Panel Overlay -->
+    <!-- Admin Panel -->
     <div id="admin-panel" class="fixed inset-0 z-[55] hidden bg-gray-900 overflow-y-auto">
         <div class="max-w-6xl mx-auto px-4 py-8">
             <div class="flex justify-between items-center mb-8">
@@ -172,13 +201,14 @@
             </div>
 
             <!-- Tabs -->
-            <div class="flex space-x-4 border-b border-gray-700 mb-6">
-                <button onclick="admin.switchTab('movies')" class="admin-tab px-4 py-2 text-white border-b-2 border-primary" data-tab="movies">Movies</button>
-                <button onclick="admin.switchTab('categories')" class="admin-tab px-4 py-2 text-gray-400 hover:text-white" data-tab="categories">Categories</button>
-                <button onclick="admin.switchTab('settings')" class="admin-tab px-4 py-2 text-gray-400 hover:text-white" data-tab="settings">Settings</button>
+            <div class="flex space-x-2 border-b border-gray-700 mb-6 overflow-x-auto pb-2">
+                <button onclick="admin.switchTab('movies')" class="admin-tab whitespace-nowrap px-4 py-2 text-white border-b-2 border-primary" data-tab="movies">Movies</button>
+                <button onclick="admin.switchTab('categories')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-400 hover:text-white" data-tab="categories">Categories</button>
+                <button onclick="admin.switchTab('notifications')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-400 hover:text-white" data-tab="notifications">Notifications</button>
+                <button onclick="admin.switchTab('settings')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-400 hover:text-white" data-tab="settings">Settings</button>
             </div>
 
-            <!-- Tab Content: Movies -->
+            <!-- Tab: Movies -->
             <div id="tab-movies" class="admin-content">
                 <div class="flex justify-between mb-4">
                     <h2 class="text-xl font-semibold">Library Content</h2>
@@ -186,22 +216,13 @@
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-gray-400">
-                        <thead class="bg-gray-800 text-gray-200 uppercase">
-                            <tr>
-                                <th class="p-3">Title</th>
-                                <th class="p-3">Status</th>
-                                <th class="p-3">Year</th>
-                                <th class="p-3">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-movies-list" class="divide-y divide-gray-800">
-                            <!-- Injected -->
-                        </tbody>
+                        <thead class="bg-gray-800 text-gray-200 uppercase"><tr><th class="p-3">Title</th><th class="p-3">Status</th><th class="p-3">Actions</th></tr></thead>
+                        <tbody id="admin-movies-list" class="divide-y divide-gray-800"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Tab Content: Categories -->
+            <!-- Tab: Categories -->
             <div id="tab-categories" class="admin-content hidden">
                 <div class="flex justify-between mb-4">
                     <h2 class="text-xl font-semibold">Manage Categories</h2>
@@ -210,99 +231,174 @@
                 <div id="admin-categories-list" class="space-y-2"></div>
             </div>
 
-            <!-- Tab Content: Settings -->
-            <div id="tab-settings" class="admin-content hidden space-y-6">
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-lg font-bold text-white mb-4">General Settings</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Tab: Notifications -->
+            <div id="tab-notifications" class="admin-content hidden">
+                <div class="flex justify-between mb-4">
+                    <h2 class="text-xl font-semibold">Popup Notifications</h2>
+                    <button onclick="admin.openNotifEditor()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">+ New Notification</button>
+                </div>
+                <div id="admin-notif-list" class="space-y-4"></div>
+            </div>
+
+            <!-- Tab: Settings -->
+            <div id="tab-settings" class="admin-content hidden space-y-6 max-w-4xl">
+                <!-- Site Identity -->
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">Site Identity</h3>
+                    <div class="grid md:grid-cols-2 gap-4">
                         <input type="text" id="set-siteName" placeholder="Site Name" class="bg-gray-700 p-2 rounded text-white w-full">
+                        <div class="flex gap-2">
+                             <input type="text" id="set-logoUrl" placeholder="Logo URL" class="bg-gray-700 p-2 rounded text-white w-full">
+                             <button onclick="document.getElementById('set-logo-file').click()" class="bg-gray-600 px-3 rounded text-white">Upload</button>
+                             <input type="file" id="set-logo-file" class="hidden" onchange="admin.handleUpload(this, 'set-logoUrl')">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Featured & Hero -->
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">Hero Section</h3>
+                    <div class="grid md:grid-cols-1 gap-4">
+                         <div>
+                            <label class="text-sm text-gray-400">Featured Movie (Hero Background)</label>
+                            <select id="set-featuredMovie" class="bg-gray-700 p-2 rounded text-white w-full mt-1"></select>
+                         </div>
                         <input type="text" id="set-heroTitle" placeholder="Hero Title" class="bg-gray-700 p-2 rounded text-white w-full">
                         <input type="text" id="set-heroSubtitle" placeholder="Hero Subtitle" class="bg-gray-700 p-2 rounded text-white w-full">
                     </div>
                 </div>
-                
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-lg font-bold text-white mb-4">Toggles</h3>
-                    <div class="flex gap-4 flex-wrap" id="set-toggles">
-                        <!-- Checkboxes injected -->
+
+                <!-- Appearance & Layout -->
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">Appearance</h3>
+                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-sm text-gray-400">Primary Color</label>
+                            <input type="color" id="set-primaryColor" class="w-full h-10 rounded mt-1 cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-400">Poster Style</label>
+                            <select id="set-posterStyle" class="bg-gray-700 p-2 rounded text-white w-full mt-1">
+                                <option value="poster">Vertical (2:3)</option>
+                                <option value="backdrop">Thumbnail (16:9)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="text-sm text-gray-400 block mb-2">Homepage Section Order (Comma separated: trending, categories, recent, social)</label>
+                    <input type="text" id="set-sectionOrder" class="bg-gray-700 p-2 rounded text-white w-full">
+                </div>
+
+                <!-- Social Links -->
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">Social Links</h3>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <input type="text" id="set-social-youtube" placeholder="YouTube URL" class="bg-gray-700 p-2 rounded text-white">
+                        <input type="text" id="set-social-telegram" placeholder="Telegram URL" class="bg-gray-700 p-2 rounded text-white">
+                        <input type="text" id="set-social-x" placeholder="X (Twitter) URL" class="bg-gray-700 p-2 rounded text-white">
                     </div>
                 </div>
 
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-lg font-bold text-white mb-4">Theme</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label>Primary Color</label>
-                            <input type="color" id="set-primaryColor" class="w-full h-10 rounded">
-                        </div>
-                    </div>
+                <!-- Admin Management -->
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">Admins</h3>
+                    <p class="text-xs text-gray-400 mb-2">Separate emails with commas. Be careful.</p>
+                    <textarea id="set-admins" rows="3" class="bg-gray-700 p-2 rounded text-white w-full"></textarea>
+                </div>
+
+                <!-- Toggles -->
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">Feature Toggles</h3>
+                    <div class="flex gap-4 flex-wrap" id="set-toggles"></div>
                 </div>
                 
-                <button onclick="admin.saveSettings()" class="bg-primary hover:opacity-90 text-white px-6 py-2 rounded font-bold">Save All Settings</button>
+                <button onclick="admin.saveSettings()" class="bg-primary hover:opacity-90 text-white px-8 py-3 rounded font-bold w-full">Save All Settings</button>
             </div>
         </div>
     </div>
 
-    <!-- Movie Editor Modal (Admin) -->
+    <!-- Movie Editor (Admin) -->
     <div id="editor-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-90 backdrop-blur">
         <div class="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <h2 class="text-xl font-bold mb-4" id="editor-title">Edit Movie</h2>
             <form id="movie-form" class="space-y-3">
                 <input type="hidden" id="edit-id">
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="edit-title" placeholder="Movie Title" required class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary">
-                    <input type="number" id="edit-year" placeholder="Year" required class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                    <input type="text" id="edit-title" placeholder="Movie Title" required class="bg-gray-700 p-2 rounded text-white w-full">
+                    <input type="number" id="edit-year" placeholder="Year" required class="bg-gray-700 p-2 rounded text-white w-full">
                 </div>
-                <textarea id="edit-desc" placeholder="Description" rows="3" class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
+                <textarea id="edit-desc" placeholder="Description" rows="3" class="bg-gray-700 p-2 rounded text-white w-full"></textarea>
                 
                 <!-- Poster Upload -->
-                <div class="border border-dashed border-gray-600 p-4 rounded text-center">
-                    <p class="text-sm text-gray-400 mb-2">Poster Image (JPG, PNG, WEBP - Max 10MB)</p>
-                    <input type="file" id="edit-poster-file" accept="image/png, image/jpeg, image/webp" class="text-sm text-gray-400">
+                <div class="border border-dashed border-gray-600 p-4 rounded text-center relative">
+                    <p class="text-sm text-gray-400 mb-2">Poster/Thumbnail Image</p>
+                    <input type="file" id="edit-poster-file" accept="image/*" class="text-sm text-gray-400 w-full" onchange="admin.handleUpload(this, 'edit-posterUrl')">
                     <input type="hidden" id="edit-posterUrl">
-                    <div id="upload-progress-container" class="w-full bg-gray-700 h-2 mt-2 rounded hidden">
-                        <div id="upload-progress-bar" class="bg-green-500 h-2 rounded transition-all duration-300" style="width:0%"></div>
-                    </div>
-                    <p id="upload-status-text" class="text-xs text-gray-400 mt-1"></p>
+                    <p id="upload-status-movie" class="text-xs text-green-400 mt-1 h-4"></p>
                 </div>
 
-                <input type="url" id="edit-watchUrl" placeholder="Watch URL (Legal Stream)" required class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary">
-                <input type="url" id="edit-downloadUrl" placeholder="Download URL (Optional - Legal Only)" class="bg-gray-700 p-2 rounded text-white w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                <input type="url" id="edit-watchUrl" placeholder="Watch URL" required class="bg-gray-700 p-2 rounded text-white w-full">
+                <input type="url" id="edit-downloadUrl" placeholder="Download URL (Optional)" class="bg-gray-700 p-2 rounded text-white w-full">
                 
                 <div class="grid grid-cols-2 gap-4">
-                    <select id="edit-status" class="bg-gray-700 p-2 rounded text-white focus:outline-none focus:ring-1 focus:ring-primary">
-                        <option value="draft">Draft</option>
-                        <option value="published">Published</option>
-                    </select>
-                    <input type="number" id="edit-trendingScore" placeholder="Trending Score (0-100)" class="bg-gray-700 p-2 rounded text-white focus:outline-none focus:ring-1 focus:ring-primary">
+                    <select id="edit-status" class="bg-gray-700 p-2 rounded text-white"><option value="draft">Draft</option><option value="published">Published</option></select>
+                    <input type="number" id="edit-trendingScore" placeholder="Trending Score (0-100)" class="bg-gray-700 p-2 rounded text-white">
                 </div>
 
-                <!-- Categories -->
                 <div class="bg-gray-700 p-3 rounded">
                     <p class="text-sm text-gray-300 mb-2">Categories</p>
                     <div id="edit-categories" class="flex flex-wrap gap-2"></div>
                 </div>
-
                 <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" onclick="ui.toggleModal('editor-modal', false)" class="text-gray-400 hover:text-white">Cancel</button>
+                    <button type="button" onclick="ui.toggleModal('editor-modal', false)" class="text-gray-400">Cancel</button>
                     <button type="submit" id="btn-save-movie" class="bg-primary px-4 py-2 rounded text-white">Save Movie</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 transition-transform duration-300 z-[70] border border-gray-700">
+    <!-- Notification Editor (Admin) -->
+    <div id="notif-editor-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-90 backdrop-blur">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-lg border border-gray-700">
+            <h2 class="text-xl font-bold mb-4" id="notif-editor-title">Edit Notification</h2>
+            <form id="notif-form" class="space-y-3">
+                <input type="hidden" id="notif-id">
+                <input type="text" id="notif-edit-title" placeholder="Title" required class="bg-gray-700 p-2 rounded text-white w-full">
+                <textarea id="notif-edit-message" placeholder="Message" rows="3" required class="bg-gray-700 p-2 rounded text-white w-full"></textarea>
+                
+                <div class="flex gap-2">
+                     <input type="text" id="notif-edit-imageUrl" placeholder="Image URL (Optional)" class="bg-gray-700 p-2 rounded text-white w-full">
+                     <button type="button" onclick="document.getElementById('notif-file').click()" class="bg-gray-600 px-2 rounded">Up</button>
+                     <input type="file" id="notif-file" class="hidden" onchange="admin.handleUpload(this, 'notif-edit-imageUrl')">
+                </div>
+                <input type="text" id="notif-edit-linkUrl" placeholder="Action Link URL (Optional)" class="bg-gray-700 p-2 rounded text-white w-full">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="notif-edit-priority" placeholder="Priority (High shows first)" class="bg-gray-700 p-2 rounded text-white">
+                    <input type="number" id="notif-edit-maxShows" placeholder="Max Shows Per User" value="1" class="bg-gray-700 p-2 rounded text-white">
+                </div>
+                <label class="flex items-center gap-2 text-white">
+                    <input type="checkbox" id="notif-edit-enabled"> Enabled
+                </label>
+
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="ui.toggleModal('notif-editor-modal', false)" class="text-gray-400">Cancel</button>
+                    <button type="submit" id="btn-save-notif" class="bg-primary px-4 py-2 rounded text-white">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 transition-transform duration-300 z-[90] border border-gray-700">
         <span id="toast-msg"></span>
     </div>
 
-    <!-- MAIN SCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, where, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        // --- 1. CONFIGURATION ---
+        // CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyABgaLI-JUjeB45cwW0De6iGyy8io72Opg",
             authDomain: "abmovie-d4826.firebaseapp.com",
@@ -312,28 +408,29 @@
             appId: "1:187818385326:web:4bdffca6053e08033c323f"
         };
 
-        const ADMIN_EMAIL = "bristyxom@gmail.com";
-        // ImageKit Constants
         const IK_PUBLIC_KEY = "public_Wt+RjZXgdesltZmb4M/5SO8ncZk=";
         const IK_URL_ENDPOINT = "https://ik.imagekit.io/4maqtfplt";
         const IK_AUTH_ENDPOINT = "/api/imagekit-auth";
 
-        // --- 2. INITIALIZATION ---
+        // INIT
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- 3. STATE MANAGEMENT ---
+        // STATE
         const state = {
             user: null,
             isAdmin: false,
             settings: null,
             categories: [],
             movies: [],
-            filter: ''
+            notifications: [],
+            filter: '',
+            authMode: 'login', // 'login' or 'signup'
+            settingsLoaded: false
         };
 
-        // --- 4. UTILS ---
+        // UTILS
         const utils = {
             sanitize: (str) => {
                 const temp = document.createElement('div');
@@ -344,206 +441,185 @@
                 const toast = document.getElementById('toast');
                 document.getElementById('toast-msg').innerText = msg;
                 toast.classList.remove('translate-y-20');
-                if(type === 'error') toast.classList.add('text-red-400');
-                else toast.classList.remove('text-red-400');
+                toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded shadow-lg transform transition-transform duration-300 z-[90] border ${type === 'error' ? 'bg-red-900 border-red-700 text-white' : 'bg-gray-800 border-gray-700 text-white'}`;
                 
-                setTimeout(() => {
-                    toast.classList.add('translate-y-20');
-                }, 3000);
+                setTimeout(() => toast.classList.add('translate-y-20'), 3000);
             },
-            toggleDarkMode: () => {
-                document.documentElement.classList.toggle('dark');
-                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-            },
-            slugify: (text) => {
-                return text.toString().toLowerCase()
-                    .replace(/\s+/g, '-')           
-                    .replace(/[^\w\-]+/g, '')       
-                    .replace(/\-\-+/g, '-')         
-                    .replace(/^-+/, '')             
-                    .replace(/-+$/, '');            
-            }
+            slugify: (text) => text.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '')
         };
 
-        // Initialize Theme
-        if (localStorage.theme === 'light') document.documentElement.classList.remove('dark');
-        else document.documentElement.classList.add('dark');
-
-        // --- 5. DATA LAYER ---
-        const data = {
-            listening: false,
-            init: () => {
-                // Prevent duplicate listeners
-                if (data.listening) return;
-                data.listening = true;
-
-                // Settings Listener
-                onSnapshot(doc(db, "settings", "global"), (doc) => {
-                    if (doc.exists()) {
-                        state.settings = doc.data();
-                        ui.applySettings();
-                        if(!document.getElementById('admin-panel').classList.contains('hidden')) admin.renderSettingsForm();
-                    } else if(state.isAdmin) {
-                        data.seedSettings();
-                    }
-                });
-
-                // Categories Listener
-                onSnapshot(query(collection(db, "categories"), orderBy("order")), (snapshot) => {
-                    state.categories = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-                    ui.renderHome();
-                    if(state.isAdmin) admin.renderCategoriesList();
-                });
-
-                // Movies Listener (Admin sees all, Public sees only published)
-let moviesQ;
-
-if (state.isAdmin) {
-  moviesQ = query(collection(db, "movies"), orderBy("createdAt", "desc"));
-} else {
-  moviesQ = query(
-    collection(db, "movies"),
-    where("status", "==", "published"),
-    orderBy("createdAt", "desc")
-  );
-}
-
-onSnapshot(moviesQ, (snapshot) => {
-  state.movies = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-  ui.renderHome();
-  if (state.isAdmin) admin.renderMoviesList();
-}, (error) => {
-  console.error("Movies listener error:", error);
-});
-            },
-            seedSettings: async () => {
-                await setDoc(doc(db, "settings", "global"), {
-                    siteName: "StreamVault",
-                    heroTitle: "Cinematic Excellence",
-                    heroSubtitle: "Curated legal content for the connoisseur.",
-                    theme: { primaryColor: "#3b82f6" },
-                    toggles: { showTrending: true, showFooter: true, showSearch: true }
-                });
-            }
-        };
-
-        // --- 6. UI RENDERER ---
+        // UI CONTROLLER
         const ui = {
             toggleModal: (id, show) => {
                 const el = document.getElementById(id);
-                if (show) el.classList.remove('hidden');
-                else el.classList.add('hidden');
-                
-                // Clear errors on open/close
+                show ? el.classList.remove('hidden') : el.classList.add('hidden');
                 if(id === 'auth-modal') document.getElementById('auth-error').classList.add('hidden');
             },
+            closeNotification: () => ui.toggleModal('notif-modal', false),
             updateAuthUI: () => {
                 const authSection = document.getElementById('auth-section');
                 if (state.user) {
                     authSection.innerHTML = `
                         <div class="flex items-center gap-4">
-                            ${state.isAdmin ? `<button onclick="router.navigate('admin')" class="text-sm bg-gray-800 border border-gray-600 px-3 py-1 rounded text-red-400 hover:text-red-300">Admin Panel</button>` : ''}
-                            <div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white text-xs cursor-pointer" onclick="ui.logout()" title="Sign Out">
+                            ${state.isAdmin ? `<button onclick="router.navigate('admin')" class="text-xs bg-red-900/50 border border-red-500 text-red-100 px-3 py-1 rounded hover:bg-red-900">Admin</button>` : ''}
+                            <div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center font-bold text-white text-xs cursor-pointer" onclick="ui.logout()" title="Sign Out">
                                 ${state.user.email[0].toUpperCase()}
                             </div>
                         </div>
                     `;
                 } else {
-                    authSection.innerHTML = `<button onclick="ui.toggleModal('auth-modal', true)" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition">Login</button>`;
+                    authSection.innerHTML = `<button onclick="ui.toggleModal('auth-modal', true)" class="bg-primary hover:bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-semibold transition shadow-lg shadow-blue-500/20">Login</button>`;
                 }
             },
             applySettings: () => {
                 if (!state.settings) return;
-                document.documentElement.style.setProperty('--primary-color', state.settings.theme.primaryColor || '#3b82f6');
-                document.getElementById('nav-logo').innerText = state.settings.siteName;
-                document.getElementById('footer-site-name').innerText = state.settings.siteName;
+                const s = state.settings;
+                
+                // Theme & Meta
+                document.documentElement.style.setProperty('--primary-color', s.theme?.primaryColor || '#3b82f6');
+                document.title = `${s.siteName || 'StreamVault'} - Home`;
+                document.getElementById('nav-logo-text').innerText = s.siteName || 'StreamVault';
+                document.getElementById('footer-site-name').innerText = s.siteName || 'StreamVault';
                 document.getElementById('footer-year').innerText = new Date().getFullYear();
-                
-                state.settings.toggles.showFooter 
-                    ? document.getElementById('footer').classList.remove('hidden') 
-                    : document.getElementById('footer').classList.add('hidden');
 
-                state.settings.toggles.showSearch 
-                    ? document.getElementById('search-container').classList.remove('hidden') 
-                    : document.getElementById('search-container').classList.add('hidden');
-                
+                // Logo Image vs Text
+                const logoImg = document.getElementById('nav-logo-img');
+                const logoText = document.getElementById('nav-logo-text');
+                if (s.logoUrl) {
+                    logoImg.src = s.logoUrl;
+                    logoImg.classList.remove('hidden');
+                    logoText.classList.add('hidden'); // Or keep both depending on preference, removing hidden for now
+                    logoText.classList.add('md:block'); // Show text on desktop only maybe?
+                } else {
+                    logoImg.classList.add('hidden');
+                    logoText.classList.remove('hidden');
+                }
+
+                // Toggles
+                const toggleEl = (id, show) => document.getElementById(id).classList.toggle('hidden', !show);
+                toggleEl('footer', s.toggles?.showFooter);
+                toggleEl('search-container', s.toggles?.showSearch);
+
+                // Social Links
+                const socialContainer = document.getElementById('social-links-container');
+                if (s.toggles?.showSocialSection && s.socialLinks) {
+                    socialContainer.classList.remove('hidden');
+                    socialContainer.innerHTML = '';
+                    const icons = {
+                        youtube: '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/></svg>',
+                        telegram: '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>',
+                        x: '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'
+                    };
+                    Object.keys(s.socialLinks).forEach(key => {
+                        if (s.socialLinks[key]) {
+                            socialContainer.innerHTML += `<a href="${s.socialLinks[key]}" target="_blank" class="text-gray-400 hover:text-white transition">${icons[key] || key}</a>`;
+                        }
+                    });
+                } else {
+                    socialContainer.classList.add('hidden');
+                }
+
                 ui.renderHome();
             },
             renderHome: () => {
-                const app = document.getElementById('app');
-                // For public view, strictly filter published only
+                if (!state.settings || !state.settingsLoaded) return;
                 const published = state.movies.filter(m => m.status === 'published');
                 
-                if (!state.settings) {
-                    // Loading state if settings not arrived yet
-                    return; 
+                // Hero Section
+                let heroMovie = published.length ? published[0] : null;
+                if (state.settings.featuredMovieId) {
+                    const found = published.find(m => m.id === state.settings.featuredMovieId);
+                    if (found) heroMovie = found;
                 }
 
-                let html = `
-                    <div class="relative w-full h-[60vh] rounded-2xl overflow-hidden mb-12 shadow-2xl group">
-                        <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent z-10"></div>
-                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" 
-                             style="background-image: url('${published.length ? published[0].posterUrl : ''}')">
+                let html = '';
+                if (heroMovie && !state.filter) {
+                    html += `
+                        <div class="relative w-full h-[60vh] rounded-2xl overflow-hidden mb-12 shadow-2xl group cursor-pointer" onclick="ui.openMovie('${heroMovie.id}')">
+                            <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent z-10"></div>
+                            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" 
+                                 style="background-image: url('${heroMovie.posterUrl}')">
+                            </div>
+                            <div class="absolute bottom-0 left-0 p-8 z-20 max-w-2xl fade-in">
+                                <span class="bg-primary text-white text-xs px-2 py-1 rounded uppercase font-bold tracking-wider mb-2 inline-block">Featured</span>
+                                <h1 class="text-4xl md:text-6xl font-bold text-white mb-2 drop-shadow-lg">${state.settings.heroTitle || 'Welcome'}</h1>
+                                <p class="text-lg text-gray-200 mb-6 drop-shadow-md line-clamp-2">${state.settings.heroSubtitle || ''}</p>
+                                <button class="bg-primary hover:bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/30 transition flex items-center gap-2">
+                                    <span>▶ Watch Now</span>
+                                </button>
+                            </div>
                         </div>
-                        <div class="absolute bottom-0 left-0 p-8 z-20 max-w-2xl">
-                            <h1 class="text-4xl md:text-6xl font-bold text-white mb-4 drop-shadow-lg">${state.settings.heroTitle}</h1>
-                            <p class="text-lg text-gray-200 mb-6 drop-shadow-md">${state.settings.heroSubtitle}</p>
-                        </div>
-                    </div>
-                `;
+                    `;
+                }
 
                 const renderRow = (title, movies) => {
-                    if (movies.length === 0) return '';
+                    if (!movies.length) return '';
+                    // Grid adaption based on poster style
+                    const isBackdrop = state.settings.posterStyle === 'backdrop';
+                    const gridClass = isBackdrop 
+                        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
+                        : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6";
+
                     return `
-                        <div class="mb-12">
-                            <h2 class="text-2xl font-bold mb-6 pl-2 border-l-4 border-primary text-white">${title}</h2>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                                ${movies.map(m => ui.components.movieCard(m)).join('')}
+                        <div class="mb-12 fade-in">
+                            <h2 class="text-2xl font-bold mb-6 pl-2 border-l-4 border-primary text-white flex items-center gap-2">
+                                ${title} <span class="text-xs text-gray-500 font-normal ml-2">(${movies.length})</span>
+                            </h2>
+                            <div class="${gridClass}">
+                                ${movies.map(m => ui.components.movieCard(m, isBackdrop)).join('')}
                             </div>
                         </div>
                     `;
                 };
 
-                let displayMovies = published;
+                // Filter Search
                 if (state.filter) {
-                    displayMovies = published.filter(m => m.title.toLowerCase().includes(state.filter.toLowerCase()));
-                    html += renderRow(`Search Results`, displayMovies);
+                    const hits = published.filter(m => m.title.toLowerCase().includes(state.filter.toLowerCase()));
+                    html += renderRow(`Search Results for "${state.filter}"`, hits);
                 } else {
-                    if (state.settings.toggles.showTrending) {
-                        const trending = [...published].sort((a,b) => (b.trendingScore || 0) - (a.trendingScore || 0)).slice(0, 5);
-                        html += renderRow("Trending Now", trending);
-                    }
-
-                    state.categories.forEach(cat => {
-                        if (cat.enabled) {
-                            const catMovies = published.filter(m => m.categorySlugs && m.categorySlugs.includes(cat.slug));
-                            html += renderRow(cat.name, catMovies);
+                    // Dynamic Section Order
+                    const order = state.settings.sectionOrder || ['trending', 'categories', 'recent'];
+                    
+                    order.forEach(section => {
+                        const s = section.trim().toLowerCase();
+                        if (s === 'trending' && state.settings.toggles.showTrending) {
+                            const trending = [...published].sort((a,b) => (b.trendingScore || 0) - (a.trendingScore || 0)).slice(0, 5);
+                            html += renderRow("Trending Now 🔥", trending);
+                        }
+                        else if (s === 'recent') {
+                            html += renderRow("Recently Added", published.slice(0, 10));
+                        }
+                        else if (s === 'categories') {
+                            state.categories.forEach(cat => {
+                                if (cat.enabled) {
+                                    const catMovies = published.filter(m => m.categorySlugs?.includes(cat.slug));
+                                    html += renderRow(cat.name, catMovies);
+                                }
+                            });
                         }
                     });
-
-                    html += renderRow("Recently Added", published.slice(0, 10));
                 }
-
-                app.innerHTML = html;
+                document.getElementById('app').innerHTML = html;
             },
             components: {
-                movieCard: (movie) => {
+                movieCard: (movie, isBackdrop) => {
+                    const aspect = isBackdrop ? 'aspect-video' : 'aspect-poster';
                     return `
-                        <div class="relative group cursor-pointer" onclick="ui.openMovie('${movie.id}')">
-                            <div class="aspect-[2/3] rounded-xl overflow-hidden shadow-lg bg-gray-800 relative">
+                        <div class="relative group cursor-pointer bg-gray-800 rounded-xl overflow-hidden shadow-lg transition hover:shadow-primary/20 hover:-translate-y-1" onclick="ui.openMovie('${movie.id}')">
+                            <div class="${aspect} overflow-hidden relative">
                                 <img src="${movie.posterUrl}" alt="${utils.sanitize(movie.title)}" loading="lazy" 
-                                    class="w-full h-full object-cover transition duration-300 group-hover:scale-110 group-hover:opacity-60">
+                                    class="w-full h-full object-cover transition duration-500 group-hover:scale-110 group-hover:opacity-75">
                                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                                    <div class="bg-primary rounded-full p-3 shadow-lg transform scale-0 group-hover:scale-100 transition duration-300 delay-75">
+                                    <div class="bg-white/20 backdrop-blur rounded-full p-3">
                                         <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
                                     </div>
                                 </div>
                             </div>
-                            <div class="mt-3">
-                                <h3 class="font-semibold text-white truncate">${utils.sanitize(movie.title)}</h3>
-                                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <div class="p-3">
+                                <h3 class="font-semibold text-gray-100 truncate text-sm md:text-base">${utils.sanitize(movie.title)}</h3>
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
                                     <span>${movie.year}</span>
-                                    <span>${movie.categorySlugs ? movie.categorySlugs[0] || '' : ''}</span>
+                                    <span>${movie.categorySlugs?.[0] || 'Movie'}</span>
                                 </div>
                             </div>
                         </div>
@@ -557,11 +633,9 @@ onSnapshot(moviesQ, (snapshot) => {
                 document.getElementById('movie-modal-title').innerText = m.title;
                 document.getElementById('movie-modal-desc').innerText = m.description;
                 document.getElementById('movie-modal-year').innerText = m.year;
-                document.getElementById('movie-modal-rating').innerText = `★ ${m.trendingScore || 'N/A'}`;
+                document.getElementById('movie-modal-rating').innerText = `★ ${m.trendingScore || '-'}`;
                 document.getElementById('movie-modal-poster').style.backgroundImage = `url('${m.posterUrl}')`;
-                
-                const watchBtn = document.getElementById('movie-modal-watch');
-                watchBtn.href = m.watchUrl;
+                document.getElementById('movie-modal-watch').href = m.watchUrl;
                 
                 const dlBtn = document.getElementById('movie-modal-download');
                 if (m.downloadUrl && state.settings.toggles.allowDownloads !== false) { 
@@ -570,80 +644,248 @@ onSnapshot(moviesQ, (snapshot) => {
                 } else {
                     dlBtn.classList.add('hidden');
                 }
-
                 ui.toggleModal('movie-modal', true);
             },
             logout: () => {
                 signOut(auth).then(() => {
-                    utils.showToast("Logged out successfully");
-                    router.navigate('home');
+                    utils.showToast("Logged out");
+                    window.location.reload();
                 });
             }
         };
 
-        // --- 7. ADMIN CONTROLLER ---
-        const admin = { 
-            check: () => {
-                if (!state.isAdmin) return;
-                document.getElementById('admin-panel').classList.remove('hidden');
-                admin.renderMoviesList();
+        // AUTH MANAGER
+        const authManager = {
+            toggleMode: () => {
+                state.authMode = state.authMode === 'login' ? 'signup' : 'login';
+                document.getElementById('auth-title').innerText = state.authMode === 'login' ? 'Sign In' : 'Create Account';
+                document.getElementById('auth-subtitle').innerText = state.authMode === 'login' ? 'Welcome back' : 'Join StreamVault today';
+                document.getElementById('btn-auth-submit').innerText = state.authMode === 'login' ? 'Sign In' : 'Sign Up';
+                document.getElementById('auth-toggle-btn').innerText = state.authMode === 'login' ? 'New here? Create an account' : 'Already have an account? Sign In';
+                document.getElementById('auth-error').classList.add('hidden');
             },
-            switchTab: (tabName) => {
-                document.querySelectorAll('.admin-content').forEach(el => el.classList.add('hidden'));
-                document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-                document.querySelectorAll('.admin-tab').forEach(el => {
-                    el.classList.remove('border-b-2', 'border-primary', 'text-white');
-                    el.classList.add('text-gray-400');
+            handleAuth: async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errEl = document.getElementById('auth-error');
+                const btn = document.getElementById('btn-auth-submit');
+                
+                btn.disabled = true;
+                btn.classList.add('opacity-50');
+                errEl.classList.add('hidden');
+
+                try {
+                    if (state.authMode === 'signup') {
+                        await createUserWithEmailAndPassword(auth, email, password);
+                        utils.showToast("Account created! Welcome.");
+                    } else {
+                        await signInWithEmailAndPassword(auth, email, password);
+                        utils.showToast("Welcome back");
+                    }
+                    ui.toggleModal('auth-modal', false);
+                } catch (error) {
+                    console.error("Auth Error:", error);
+                    let msg = "Authentication failed.";
+                    if (error.code === 'auth/wrong-password') msg = "Incorrect password.";
+                    else if (error.code === 'auth/user-not-found') msg = "Account not found.";
+                    else if (error.code === 'auth/email-already-in-use') msg = "Email already registered.";
+                    else if (error.code === 'auth/weak-password') msg = "Password should be at least 6 characters.";
+                    else if (error.code === 'auth/invalid-email') msg = "Invalid email address.";
+                    
+                    errEl.innerText = msg;
+                    errEl.classList.remove('hidden');
+                } finally {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                }
+            },
+            forgotPassword: async () => {
+                const email = prompt("Enter your email for reset link:");
+                if(email) {
+                    try {
+                        await sendPasswordResetEmail(auth, email);
+                        utils.showToast("Reset link sent to " + email);
+                    } catch(e) {
+                        utils.showToast("Error sending link", "error");
+                    }
+                }
+            }
+        };
+
+        // NOTIFICATION SYSTEM
+        const notifManager = {
+            check: async () => {
+                if (!state.notifications.length) return;
+                
+                // Get eligible notifications (enabled, active date)
+                const now = new Date();
+                const eligible = state.notifications.filter(n => {
+                    if (!n.enabled) return false;
+                    // TODO: Add date check if startAt/endAt exists
+                    return true;
+                }).sort((a,b) => (b.priority || 0) - (a.priority || 0)); // High priority first
+
+                if (!eligible.length) return;
+
+                // Check view counts
+                let viewCounts = {};
+                try {
+                    viewCounts = JSON.parse(localStorage.getItem('notifViews') || '{}');
+                } catch(e){}
+
+                // If user logged in, we could fetch from Firestore profile here, but using LS for speed/simplicity in this demo
+                
+                for (const note of eligible) {
+                    const views = viewCounts[note.id] || 0;
+                    if (views < (note.maxShows || 1)) {
+                        // Show this one
+                        notifManager.show(note);
+                        // Increment
+                        viewCounts[note.id] = views + 1;
+                        localStorage.setItem('notifViews', JSON.stringify(viewCounts));
+                        
+                        if(state.user) {
+                             // Sync to firestore background
+                             const ref = doc(db, `profiles/${state.user.uid}/notifViews/${note.id}`);
+                             setDoc(ref, { count: increment(1), lastShown: serverTimestamp() }, { merge: true });
+                        }
+                        break; // Only show one per session/load
+                    }
+                }
+            },
+            show: (note) => {
+                document.getElementById('notif-title').innerText = note.title;
+                document.getElementById('notif-message').innerText = note.message;
+                const imgContainer = document.getElementById('notif-image-container');
+                const btn = document.getElementById('notif-link');
+                
+                if (note.imageUrl) {
+                    imgContainer.style.backgroundImage = `url('${note.imageUrl}')`;
+                    imgContainer.classList.remove('hidden');
+                } else {
+                    imgContainer.classList.add('hidden');
+                }
+
+                if (note.linkUrl) {
+                    btn.href = note.linkUrl;
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.classList.add('hidden');
+                }
+                
+                setTimeout(() => ui.toggleModal('notif-modal', true), 1000); // Slight delay
+            }
+        };
+
+        // DATA LAYER
+        const data = {
+            init: () => {
+                // 1. Settings (Critical)
+                onSnapshot(doc(db, "settings", "global"), (docSnap) => {
+                    if (docSnap.exists()) {
+                        state.settings = docSnap.data();
+                        state.settingsLoaded = true;
+                        
+                        // Dynamic Admin Check based on array in settings
+                        if (state.user && state.settings.admins && Array.isArray(state.settings.admins)) {
+                            state.isAdmin = state.settings.admins.includes(state.user.email);
+                        } else {
+                            state.isAdmin = false;
+                        }
+
+                        ui.updateAuthUI();
+                        ui.applySettings();
+
+                        // Now that we know if admin, load movies/cats
+                        data.loadContent();
+                    }
                 });
-                const btn = document.querySelector(`button[data-tab="${tabName}"]`);
+            },
+            loadContent: () => {
+                // Categories
+                onSnapshot(query(collection(db, "categories"), orderBy("order")), (snap) => {
+                    state.categories = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    ui.renderHome();
+                    if(state.isAdmin) admin.renderCategoriesList();
+                });
+
+                // Movies
+                // NOTE: Using two different queries to satisfy security rules
+                let q;
+                if (state.isAdmin) {
+                    q = query(collection(db, "movies"), orderBy("createdAt", "desc"));
+                } else {
+                    q = query(collection(db, "movies"), where("status", "==", "published"), orderBy("createdAt", "desc"));
+                }
+                
+                // Unsubscribe previous if exists (simplified here by just overwriting)
+                onSnapshot(q, (snap) => {
+                    state.movies = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    ui.renderHome();
+                    if(state.isAdmin) admin.renderMoviesList();
+                });
+
+                // Notifications (Public reads all enabled, rules filter this usually, but here we query all and filter in JS or rules)
+                // For admin simplicity we query all
+                const notifQ = state.isAdmin 
+                    ? query(collection(db, "notifications"), orderBy("createdAt", "desc"))
+                    : query(collection(db, "notifications"), where("enabled", "==", true));
+
+                onSnapshot(notifQ, (snap) => {
+                    state.notifications = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    if(state.isAdmin) admin.renderNotifList();
+                    else notifManager.check(); // Check if we should pop up
+                });
+            }
+        };
+
+        // ADMIN CONTROLLER
+        const admin = {
+            switchTab: (tab) => {
+                document.querySelectorAll('.admin-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`tab-${tab}`).classList.remove('hidden');
+                document.querySelectorAll('.admin-tab').forEach(t => {
+                    t.classList.remove('border-b-2', 'border-primary', 'text-white');
+                    t.classList.add('text-gray-400');
+                });
+                const btn = document.querySelector(`button[data-tab="${tab}"]`);
                 btn.classList.add('border-b-2', 'border-primary', 'text-white');
                 btn.classList.remove('text-gray-400');
 
-                if (tabName === 'movies') admin.renderMoviesList();
-                if (tabName === 'categories') admin.renderCategoriesList();
-                if (tabName === 'settings') admin.renderSettingsForm();
+                if(tab === 'settings') admin.renderSettingsForm();
             },
             renderMoviesList: () => {
-                const list = document.getElementById('admin-movies-list');
-                // Admin sees ALL movies
-                list.innerHTML = state.movies.map(m => `
-                    <tr class="hover:bg-gray-800 transition">
-                        <td class="p-3 font-medium text-white">${utils.sanitize(m.title)}</td>
+                const html = state.movies.map(m => `
+                    <tr class="hover:bg-gray-800 transition border-b border-gray-800">
+                        <td class="p-3 font-medium text-white">${utils.sanitize(m.title)} <span class="text-xs text-gray-500 block">${m.year}</span></td>
                         <td class="p-3"><span class="px-2 py-1 rounded text-xs ${m.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'}">${m.status}</span></td>
-                        <td class="p-3">${m.year}</td>
                         <td class="p-3">
-                            <button onclick="admin.editMovie('${m.id}')" class="text-blue-400 hover:text-white mr-2">Edit</button>
-                            <button onclick="admin.deleteMovie('${m.id}')" class="text-red-400 hover:text-white">Delete</button>
+                            <button onclick="admin.editMovie('${m.id}')" class="text-blue-400 hover:text-white mr-3">Edit</button>
+                            <button onclick="admin.deleteMovie('${m.id}')" class="text-red-400 hover:text-white">Del</button>
                         </td>
                     </tr>
                 `).join('');
+                document.getElementById('admin-movies-list').innerHTML = html;
             },
-            editMovie: (id) => {
-                admin.openMovieEditor(id);
-            },
-            openMovieEditor: (id = null) => {
+            openMovieEditor: (id) => {
                 const form = document.getElementById('movie-form');
                 form.reset();
-                // Reset progress bar
-                document.getElementById('upload-progress-container').classList.add('hidden');
-                document.getElementById('upload-progress-bar').style.width = '0%';
-                document.getElementById('upload-status-text').innerText = '';
-
                 document.getElementById('edit-id').value = id || '';
                 document.getElementById('editor-title').innerText = id ? 'Edit Movie' : 'Add Movie';
                 
-                // Render Categories
+                // Cats
                 const catContainer = document.getElementById('edit-categories');
                 catContainer.innerHTML = state.categories.map(cat => `
-                    <label class="inline-flex items-center space-x-2 bg-gray-800 px-3 py-1 rounded cursor-pointer">
+                    <label class="inline-flex items-center space-x-2 bg-gray-800 px-3 py-1 rounded cursor-pointer border border-gray-700">
                         <input type="checkbox" name="cat" value="${cat.slug}" class="form-checkbox text-primary rounded bg-gray-700 border-none">
-                        <span class="text-sm text-gray-300">${cat.name}</span>
+                        <span class="text-xs text-gray-300">${cat.name}</span>
                     </label>
                 `).join('');
 
                 if (id) {
                     const m = state.movies.find(x => x.id === id);
-                    if (m) {
+                    if(m) {
                         document.getElementById('edit-title').value = m.title;
                         document.getElementById('edit-year').value = m.year;
                         document.getElementById('edit-desc').value = m.description;
@@ -652,11 +894,9 @@ onSnapshot(moviesQ, (snapshot) => {
                         document.getElementById('edit-status').value = m.status;
                         document.getElementById('edit-posterUrl').value = m.posterUrl;
                         document.getElementById('edit-trendingScore').value = m.trendingScore || 0;
-                        
-                        // Check categories
-                        const inputs = document.querySelectorAll('input[name="cat"]');
-                        inputs.forEach(input => {
-                            if(m.categorySlugs && m.categorySlugs.includes(input.value)) input.checked = true;
+                        m.categorySlugs?.forEach(slug => {
+                            const cb = document.querySelector(`input[name="cat"][value="${slug}"]`);
+                            if(cb) cb.checked = true;
                         });
                     }
                 }
@@ -664,240 +904,278 @@ onSnapshot(moviesQ, (snapshot) => {
             },
             handleMovieSave: async (e) => {
                 e.preventDefault();
-                const saveBtn = document.getElementById('btn-save-movie');
-                saveBtn.disabled = true;
-                saveBtn.innerText = 'Saving...';
-
-                const id = document.getElementById('edit-id').value;
-                const fileInput = document.getElementById('edit-poster-file');
-                const titleInput = document.getElementById('edit-title').value;
-                let posterUrl = document.getElementById('edit-posterUrl').value;
-
+                const btn = document.getElementById('btn-save-movie');
+                btn.disabled = true;
+                btn.innerText = 'Saving...';
+                
                 try {
-                    // --- ROBUST IMAGEKIT UPLOAD ---
-                    if (fileInput.files.length > 0) {
-                        const file = fileInput.files[0];
-                        
-                        // Validation
-                        if (file.size > 10 * 1024 * 1024) {
-                            throw new Error("File too large (Max 10MB)");
-                        }
-
-                        const progressContainer = document.getElementById('upload-progress-container');
-                        const progressBar = document.getElementById('upload-progress-bar');
-                        const statusText = document.getElementById('upload-status-text');
-                        
-                        progressContainer.classList.remove('hidden');
-                        statusText.innerText = 'Authenticating...';
-
-                        // 1. Fetch Auth Parameters
-                        const authRes = await fetch(IK_AUTH_ENDPOINT);
-                        if (!authRes.ok) throw new Error('Auth server error');
-                        const authData = await authRes.json();
-                        
-                        // 2. Instantiate SDK
-                        const imagekit = new ImageKit({
-                            publicKey: IK_PUBLIC_KEY,
-                            urlEndpoint: IK_URL_ENDPOINT
-                        });
-
-                        statusText.innerText = 'Uploading...';
-
-                        // 3. Upload
-                        const result = await new Promise((resolve, reject) => {
-                            imagekit.upload({
-                                file: file,
-                                fileName: utils.slugify(titleInput || 'poster') + '-' + Date.now(),
-                                tags: ["movie_poster"],
-                                token: authData.token,
-                                signature: authData.signature,
-                                expire: authData.expire,
-                                useUniqueFileName: true
-                            }, (err, result) => {
-                                if (err) reject(err);
-                                else resolve(result);
-                            });
-                        });
-                        
-                        // Success
-                        progressBar.style.width = '100%';
-                        statusText.innerText = 'Upload Complete';
-                        posterUrl = result.url;
-                    }
-
-                    const dataPayload = {
-                        title: titleInput,
-                        year: document.getElementById('edit-year').value,
+                    const id = document.getElementById('edit-id').value;
+                    const data = {
+                        title: document.getElementById('edit-title').value,
+                        year: parseInt(document.getElementById('edit-year').value),
                         description: document.getElementById('edit-desc').value,
                         watchUrl: document.getElementById('edit-watchUrl').value,
                         downloadUrl: document.getElementById('edit-downloadUrl').value,
                         status: document.getElementById('edit-status').value,
+                        posterUrl: document.getElementById('edit-posterUrl').value,
                         trendingScore: parseInt(document.getElementById('edit-trendingScore').value) || 0,
-                        posterUrl: posterUrl,
-                        categorySlugs: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(cb => cb.value),
+                        categorySlugs: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
                         updatedAt: serverTimestamp()
                     };
 
-                    if (id) {
-                        await updateDoc(doc(db, "movies", id), dataPayload);
-                        utils.showToast('Movie Updated');
-                    } else {
-                        dataPayload.createdAt = serverTimestamp();
-                        await addDoc(collection(db, "movies"), dataPayload);
-                        utils.showToast('Movie Added');
+                    if(id) await updateDoc(doc(db, "movies", id), data);
+                    else {
+                        data.createdAt = serverTimestamp();
+                        await addDoc(collection(db, "movies"), data);
                     }
                     ui.toggleModal('editor-modal', false);
-
-                } catch (err) {
-                    console.error("Save Error:", err);
-                    utils.showToast('Error: ' + (err.message || 'Save failed'), 'error');
+                    utils.showToast('Movie saved');
+                } catch(err) {
+                    alert(err.message);
                 } finally {
-                    saveBtn.disabled = false;
-                    saveBtn.innerText = 'Save Movie';
+                    btn.disabled = false;
+                    btn.innerText = 'Save Movie';
                 }
             },
             deleteMovie: async (id) => {
-                if(confirm('Delete this movie permanently?')) {
-                    await deleteDoc(doc(db, "movies", id));
-                    utils.showToast('Movie Deleted');
+                if(confirm("Delete permanently?")) await deleteDoc(doc(db, "movies", id));
+            },
+            // Upload Logic
+            handleUpload: async (input, targetId) => {
+                const file = input.files[0];
+                if (!file) return;
+                
+                const status = input.parentElement.querySelector('p') || document.getElementById('upload-status-movie');
+                status.innerText = "Uploading...";
+                
+                try {
+                    const authRes = await fetch(IK_AUTH_ENDPOINT);
+                    if (!authRes.ok) throw new Error("Auth Server Error");
+                    const authData = await authRes.json();
+
+                    const imagekit = new ImageKit({ publicKey: IK_PUBLIC_KEY, urlEndpoint: IK_URL_ENDPOINT });
+                    
+                    const res = await new Promise((resolve, reject) => {
+                        imagekit.upload({
+                            file: file,
+                            fileName: utils.slugify(file.name),
+                            tags: ["streamvault"],
+                            token: authData.token,
+                            signature: authData.signature,
+                            expire: authData.expire
+                        }, (err, result) => {
+                            if(err) reject(err); else resolve(result);
+                        });
+                    });
+                    
+                    document.getElementById(targetId).value = res.url;
+                    status.innerText = "Done!";
+                } catch(e) {
+                    console.error(e);
+                    status.innerText = "Error!";
+                    alert("Upload failed. Check console.");
                 }
             },
-            renderCategoriesList: () => {
-                const div = document.getElementById('admin-categories-list');
-                div.innerHTML = state.categories.map(cat => `
-                    <div class="flex items-center justify-between bg-gray-800 p-4 rounded">
-                        <div>
-                            <span class="font-bold text-white">${cat.name}</span>
-                            <span class="text-xs text-gray-400 ml-2">(${cat.slug})</span>
-                        </div>
-                        <div class="flex gap-2">
-                             <button onclick="admin.deleteCategory('${cat.id}')" class="text-red-400 text-sm">Delete</button>
-                        </div>
-                    </div>
-                `).join('');
-            },
-            addCategory: async () => {
-                const name = prompt("Category Name:");
-                if (!name) return;
-                const slug = utils.slugify(name);
-                await addDoc(collection(db, "categories"), {
-                    name, slug, enabled: true, order: state.categories.length + 1
-                });
-            },
-            deleteCategory: async (id) => {
-                if(confirm('Delete Category?')) await deleteDoc(doc(db, "categories", id));
-            },
+            // Settings
             renderSettingsForm: () => {
                 const s = state.settings;
-                document.getElementById('set-siteName').value = s.siteName;
-                document.getElementById('set-heroTitle').value = s.heroTitle;
-                document.getElementById('set-heroSubtitle').value = s.heroSubtitle;
-                document.getElementById('set-primaryColor').value = s.theme.primaryColor;
+                document.getElementById('set-siteName').value = s.siteName || '';
+                document.getElementById('set-logoUrl').value = s.logoUrl || '';
+                document.getElementById('set-heroTitle').value = s.heroTitle || '';
+                document.getElementById('set-heroSubtitle').value = s.heroSubtitle || '';
+                document.getElementById('set-primaryColor').value = s.theme?.primaryColor || '#3b82f6';
+                document.getElementById('set-posterStyle').value = s.posterStyle || 'poster';
+                document.getElementById('set-sectionOrder').value = (s.sectionOrder || []).join(', ');
+                
+                // Social
+                document.getElementById('set-social-youtube').value = s.socialLinks?.youtube || '';
+                document.getElementById('set-social-telegram').value = s.socialLinks?.telegram || '';
+                document.getElementById('set-social-x').value = s.socialLinks?.x || '';
 
+                // Admins
+                document.getElementById('set-admins').value = (s.admins || []).join(', ');
+
+                // Featured Movie Dropdown
+                const featSel = document.getElementById('set-featuredMovie');
+                featSel.innerHTML = '<option value="">-- Auto (First Published) --</option>' + 
+                    state.movies.filter(m => m.status === 'published').map(m => `
+                        <option value="${m.id}" ${s.featuredMovieId === m.id ? 'selected' : ''}>${m.title}</option>
+                    `).join('');
+
+                // Toggles
                 const togglesDiv = document.getElementById('set-toggles');
-                togglesDiv.innerHTML = Object.keys(s.toggles).map(key => `
-                     <label class="flex items-center space-x-2 bg-gray-700 px-3 py-2 rounded">
-                        <input type="checkbox" id="toggle-${key}" ${s.toggles[key] ? 'checked' : ''}>
-                        <span class="capitalize text-sm text-white">${key.replace(/([A-Z])/g, ' $1')}</span>
+                togglesDiv.innerHTML = Object.keys(s.toggles || {}).map(k => `
+                    <label class="flex items-center space-x-2 text-sm text-gray-300">
+                        <input type="checkbox" id="toggle-${k}" ${s.toggles[k] ? 'checked' : ''} class="rounded bg-gray-700 border-none text-primary">
+                        <span class="capitalize">${k.replace(/([A-Z])/g, ' $1')}</span>
                     </label>
                 `).join('');
             },
             saveSettings: async () => {
                 const s = state.settings;
                 const newToggles = {};
-                Object.keys(s.toggles).forEach(key => {
-                    newToggles[key] = document.getElementById(`toggle-${key}`).checked;
+                Object.keys(s.toggles).forEach(k => {
+                    newToggles[k] = document.getElementById(`toggle-${k}`).checked;
                 });
 
-                await updateDoc(doc(db, "settings", "global"), {
+                const adminsArr = document.getElementById('set-admins').value.split(',').map(e => e.trim()).filter(e => e);
+
+                const updateData = {
                     siteName: document.getElementById('set-siteName').value,
+                    logoUrl: document.getElementById('set-logoUrl').value,
                     heroTitle: document.getElementById('set-heroTitle').value,
                     heroSubtitle: document.getElementById('set-heroSubtitle').value,
+                    featuredMovieId: document.getElementById('set-featuredMovie').value,
+                    posterStyle: document.getElementById('set-posterStyle').value,
+                    sectionOrder: document.getElementById('set-sectionOrder').value.split(',').map(x => x.trim()),
+                    socialLinks: {
+                        youtube: document.getElementById('set-social-youtube').value,
+                        telegram: document.getElementById('set-social-telegram').value,
+                        x: document.getElementById('set-social-x').value,
+                    },
+                    admins: adminsArr,
                     theme: { ...s.theme, primaryColor: document.getElementById('set-primaryColor').value },
                     toggles: newToggles
-                });
-                utils.showToast('Settings Saved');
-            }
-        };
+                };
 
-        // --- 8. EVENTS & ROUTER ---
-        const router = {
-            navigate: (route) => {
-                window.location.hash = route;
-                if (route === 'admin') {
-                    if (state.isAdmin) admin.check();
-                    else window.location.hash = 'home';
-                } else if (route === 'home') {
+                await updateDoc(doc(db, "settings", "global"), updateData);
+                utils.showToast("Settings Updated");
+                // Reload window to reflect critical logic changes (like admin list)
+                setTimeout(() => window.location.reload(), 1000);
+            },
+            // Categories
+            renderCategoriesList: () => {
+                document.getElementById('admin-categories-list').innerHTML = state.categories.map(cat => `
+                    <div class="flex items-center justify-between bg-gray-800 p-3 rounded border border-gray-700">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-bold">${cat.order || 0}</span>
+                            <span class="text-gray-300">${cat.name}</span>
+                            <span class="text-xs bg-gray-700 px-2 rounded ${cat.enabled?'text-green-400':'text-red-400'}">${cat.enabled?'On':'Off'}</span>
+                        </div>
+                        <div class="gap-2 flex">
+                            <button onclick="admin.moveCat('${cat.id}', -1)" class="text-gray-400 hover:text-white">↑</button>
+                            <button onclick="admin.moveCat('${cat.id}', 1)" class="text-gray-400 hover:text-white">↓</button>
+                            <button onclick="admin.toggleCat('${cat.id}', ${!cat.enabled})" class="text-blue-400 text-xs">Toggle</button>
+                            <button onclick="admin.deleteCat('${cat.id}')" class="text-red-400 text-xs">Del</button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            addCategory: async () => {
+                const name = prompt("Name:");
+                if(!name) return;
+                await addDoc(collection(db, "categories"), {
+                    name, slug: utils.slugify(name), enabled: true, order: state.categories.length + 1
+                });
+            },
+            moveCat: async (id, dir) => {
+                // Simplified bubble sort swap for demo
+                const idx = state.categories.findIndex(c => c.id === id);
+                if (idx < 0) return;
+                const targetIdx = idx + dir;
+                if (targetIdx < 0 || targetIdx >= state.categories.length) return;
+                
+                const c1 = state.categories[idx];
+                const c2 = state.categories[targetIdx];
+                
+                // Swap orders
+                await updateDoc(doc(db, "categories", c1.id), { order: c2.order });
+                await updateDoc(doc(db, "categories", c2.id), { order: c1.order });
+            },
+            toggleCat: async (id, val) => updateDoc(doc(db, "categories", id), { enabled: val }),
+            deleteCat: async (id) => { if(confirm("Del?")) deleteDoc(doc(db, "categories", id)); },
+
+            // Notifications
+            renderNotifList: () => {
+                document.getElementById('admin-notif-list').innerHTML = state.notifications.map(n => `
+                    <div class="bg-gray-800 p-4 rounded border border-gray-700 flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-white flex items-center gap-2">
+                                ${n.title}
+                                <span class="text-xs px-2 rounded ${n.enabled?'bg-green-900 text-green-300':'bg-red-900 text-red-300'}">${n.enabled?'Active':'Inactive'}</span>
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">Priority: ${n.priority || 0} | Views: ${n.maxShows}</div>
+                        </div>
+                        <div>
+                            <button onclick="admin.openNotifEditor('${n.id}')" class="text-blue-400 mr-3">Edit</button>
+                            <button onclick="admin.deleteNotif('${n.id}')" class="text-red-400">Del</button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            openNotifEditor: (id) => {
+                document.getElementById('notif-form').reset();
+                document.getElementById('notif-id').value = id || '';
+                document.getElementById('notif-editor-title').innerText = id ? "Edit" : "Create";
+                
+                if (id) {
+                    const n = state.notifications.find(x => x.id === id);
+                    if(n) {
+                        document.getElementById('notif-edit-title').value = n.title;
+                        document.getElementById('notif-edit-message').value = n.message;
+                        document.getElementById('notif-edit-imageUrl').value = n.imageUrl || '';
+                        document.getElementById('notif-edit-linkUrl').value = n.linkUrl || '';
+                        document.getElementById('notif-edit-priority').value = n.priority || 0;
+                        document.getElementById('notif-edit-maxShows').value = n.maxShows || 1;
+                        document.getElementById('notif-edit-enabled').checked = n.enabled;
+                    }
+                }
+                ui.toggleModal('notif-editor-modal', true);
+            },
+            deleteNotif: async (id) => { if(confirm("Del?")) deleteDoc(doc(db, "notifications", id)); }
+        };
+        // Notification Form Handler
+        document.getElementById('notif-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('notif-id').value;
+            const data = {
+                title: document.getElementById('notif-edit-title').value,
+                message: document.getElementById('notif-edit-message').value,
+                imageUrl: document.getElementById('notif-edit-imageUrl').value,
+                linkUrl: document.getElementById('notif-edit-linkUrl').value,
+                priority: parseInt(document.getElementById('notif-edit-priority').value) || 0,
+                maxShows: parseInt(document.getElementById('notif-edit-maxShows').value) || 1,
+                enabled: document.getElementById('notif-edit-enabled').checked,
+                updatedAt: serverTimestamp()
+            };
+            if(id) await updateDoc(doc(db, "notifications", id), data);
+            else { data.createdAt = serverTimestamp(); await addDoc(collection(db, "notifications"), data); }
+            ui.toggleModal('notif-editor-modal', false);
+        });
+
+        // GLOBAL EXPORTS
+        window.ui = ui;
+        window.authManager = authManager;
+        window.admin = admin;
+        window.router = {
+            navigate: (path) => {
+                if (path === 'admin') {
+                    if (state.isAdmin) {
+                        document.getElementById('admin-panel').classList.remove('hidden');
+                        admin.switchTab('movies');
+                    }
+                } else {
                     document.getElementById('admin-panel').classList.add('hidden');
                 }
             }
         };
 
-        // Auth Listener - Runs on load
-        onAuthStateChanged(auth, (user) => {
-            state.user = user;
-            if (user) {
-                state.isAdmin = (user.email === ADMIN_EMAIL);
-                // If modal was open, close it
-                ui.toggleModal('auth-modal', false);
-            } else {
-                state.isAdmin = false;
-            }
-            
-            ui.updateAuthUI();
-            
-            // ALWAYS initialize data, logged in or not
-            data.init();
+        // EVENTS
+        document.getElementById('auth-form').addEventListener('submit', authManager.handleAuth);
+        document.getElementById('movie-form').addEventListener('submit', admin.handleMovieSave);
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
         });
-
-        // Login Handler
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            const btn = document.getElementById('btn-login-submit');
-            const errEl = document.getElementById('auth-error');
-            
-            btn.disabled = true;
-            btn.innerText = "Signing in...";
-            errEl.classList.add('hidden');
-
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                // Success is handled by onAuthStateChanged
-            } catch (err) {
-                console.error("Login Error:", err.code, err.message);
-                let msg = "Login failed.";
-                switch(err.code) {
-                    case 'auth/user-not-found': msg = "No user found with this email."; break;
-                    case 'auth/wrong-password': msg = "Incorrect password."; break;
-                    case 'auth/invalid-email': msg = "Invalid email format."; break;
-                    case 'auth/too-many-requests': msg = "Too many attempts. Try later."; break;
-                }
-                errEl.innerText = msg;
-                errEl.classList.remove('hidden');
-                btn.disabled = false;
-                btn.innerText = "Sign In";
-            }
-        });
-
         document.getElementById('global-search').addEventListener('input', (e) => {
             state.filter = e.target.value;
             ui.renderHome();
         });
 
-        document.getElementById('theme-toggle').addEventListener('click', utils.toggleDarkMode);
-
-        // Expose to window for HTML onclick handlers
-        window.admin = admin;
-        window.ui = ui;
-        window.router = router;
-
-        document.getElementById('movie-form').addEventListener('submit', admin.handleMovieSave);
-
-        // Initial Route Check
-        if(window.location.hash === '#admin') router.navigate('admin');
-        else router.navigate('home');
+        // INIT AUTH
+        onAuthStateChanged(auth, (u) => {
+            state.user = u;
+            data.init(); // Data init handles the rest
+        });
 
     </script>
 </body>
