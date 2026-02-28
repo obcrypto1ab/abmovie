@@ -6,7 +6,7 @@
     <title>StreamVault - Legal Movie Library</title>
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tailwind Config for Custom Colors -->
+    <!-- Tailwind Config -->
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -26,8 +26,9 @@
     </script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- ImageKit SDK -->
-    <script type="text/javascript" src="https://unpkg.com/imagekit-javascript/dist/imagekit.min.js"></script>
+    
+    <!-- ImageKit SDK (Standard UNPKG) -->
+    <script src="https://unpkg.com/imagekit-javascript/dist/imagekit.min.js"></script>
     
     <style>
         :root {
@@ -37,7 +38,7 @@
         }
         body { font-family: 'Inter', sans-serif; }
         
-        /* Glassmorphism Utilities */
+        /* Glassmorphism */
         .glass {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -50,7 +51,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         
-        /* Custom Scrollbar */
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #111827; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
@@ -116,7 +117,7 @@
         <p>&copy; <span id="footer-year"></span> <span id="footer-site-name">StreamVault</span>. All content is legally licensed or public domain.</p>
     </footer>
 
-    <!-- Modals (Hidden by default) -->
+    <!-- Modals -->
     
     <!-- Auth Modal -->
     <div id="auth-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm fade-in">
@@ -253,10 +254,13 @@
                 
                 <!-- Poster Upload -->
                 <div class="border border-dashed border-gray-600 p-4 rounded text-center">
-                    <p class="text-sm text-gray-400 mb-2">Poster Image</p>
-                    <input type="file" id="edit-poster-file" accept="image/*" class="text-sm text-gray-400">
+                    <p class="text-sm text-gray-400 mb-2">Poster Image (JPG, PNG, WEBP - Max 10MB)</p>
+                    <input type="file" id="edit-poster-file" accept="image/png, image/jpeg, image/webp" class="text-sm text-gray-400">
                     <input type="hidden" id="edit-posterUrl">
-                    <div id="upload-progress" class="w-full bg-gray-700 h-2 mt-2 rounded hidden"><div class="bg-green-500 h-2 rounded" style="width:0%"></div></div>
+                    <div id="upload-progress-container" class="w-full bg-gray-700 h-2 mt-2 rounded hidden">
+                        <div id="upload-progress-bar" class="bg-green-500 h-2 rounded transition-all duration-300" style="width:0%"></div>
+                    </div>
+                    <p id="upload-status-text" class="text-xs text-gray-400 mt-1"></p>
                 </div>
 
                 <input type="url" id="edit-watchUrl" placeholder="Watch URL (Legal Stream)" required class="bg-gray-700 p-2 rounded text-white w-full">
@@ -278,7 +282,7 @@
 
                 <div class="flex justify-end gap-3 pt-4">
                     <button type="button" onclick="ui.toggleModal('editor-modal', false)" class="text-gray-400 hover:text-white">Cancel</button>
-                    <button type="submit" class="bg-primary px-4 py-2 rounded text-white">Save Movie</button>
+                    <button type="submit" id="btn-save-movie" class="bg-primary px-4 py-2 rounded text-white">Save Movie</button>
                 </div>
             </form>
         </div>
@@ -296,31 +300,25 @@
         import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         // --- 1. CONFIGURATION ---
-        // REPLACE WITH YOUR FIREBASE CONFIG
         const firebaseConfig = {
-  apiKey: "AIzaSyABgaLI-JUjeB45cwW0De6iGyy8io72Opg",
-  authDomain: "abmovie-d4826.firebaseapp.com",
-  projectId: "abmovie-d4826",
-  storageBucket: "abmovie-d4826.firebasestorage.app",
-  messagingSenderId: "187818385326",
-  appId: "1:187818385326:web:4bdffca6053e08033c323f"
-};
+            apiKey: "AIzaSyABgaLI-JUjeB45cwW0De6iGyy8io72Opg",
+            authDomain: "abmovie-d4826.firebaseapp.com",
+            projectId: "abmovie-d4826",
+            storageBucket: "abmovie-d4826.firebasestorage.app",
+            messagingSenderId: "187818385326",
+            appId: "1:187818385326:web:4bdffca6053e08033c323f"
+        };
 
         const ADMIN_EMAIL = "bristyxom@gmail.com";
-        const IMAGEKIT_AUTH_ENDPOINT = "/api/imagekit-auth"; 
-        const IMAGEKIT_URL_ENDPOINT = "https://ik.imagekit.io/YOUR_IMAGEKIT_ID"; // Replace this
+        // ImageKit Constants
+        const IK_PUBLIC_KEY = "public_Wt+RjZXgdesltZmb4M/5SO8ncZk=";
+        const IK_URL_ENDPOINT = "https://ik.imagekit.io/4maqtfplt";
+        const IK_AUTH_ENDPOINT = "/api/imagekit-auth";
 
         // --- 2. INITIALIZATION ---
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        
-        // ImageKit Instance (Client Side)
-        const imagekit = new ImageKit({
-            publicKey: "YOUR_IMAGEKIT_PUBLIC_KEY", // Replace this
-            urlEndpoint: IMAGEKIT_URL_ENDPOINT,
-            authenticationEndpoint: IMAGEKIT_AUTH_ENDPOINT
-        });
 
         // --- 3. STATE MANAGEMENT ---
         const state = {
@@ -336,7 +334,7 @@
         const utils = {
             sanitize: (str) => {
                 const temp = document.createElement('div');
-                temp.textContent = str;
+                temp.textContent = str || '';
                 return temp.innerHTML;
             },
             showToast: (msg, type = 'info') => {
@@ -353,36 +351,38 @@
             toggleDarkMode: () => {
                 document.documentElement.classList.toggle('dark');
                 localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            },
+            slugify: (text) => {
+                return text.toString().toLowerCase()
+                    .replace(/\s+/g, '-')           // Replace spaces with -
+                    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+                    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+                    .replace(/^-+/, '')             // Trim - from start of text
+                    .replace(/-+$/, '');            // Trim - from end of text
             }
         };
 
-        // Initialize Theme from LocalStorage or Default
+        // Initialize Theme
         if (localStorage.theme === 'light') document.documentElement.classList.remove('dark');
         else document.documentElement.classList.add('dark');
 
         // --- 5. DATA LAYER ---
         const data = {
             init: () => {
-                // Settings Listener
                 onSnapshot(doc(db, "settings", "global"), (doc) => {
                     if (doc.exists()) {
                         state.settings = doc.data();
                         ui.applySettings();
                         if(!document.getElementById('admin-panel').classList.contains('hidden')) admin.renderSettingsForm();
-                    } else {
-                        // Create default settings if not exists (First run)
-                        if(state.isAdmin) data.seedSettings();
-                    }
+                    } else if(state.isAdmin) data.seedSettings();
                 });
 
-                // Categories Listener
                 onSnapshot(query(collection(db, "categories"), orderBy("order")), (snapshot) => {
                     state.categories = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
                     ui.renderHome();
                     if(state.isAdmin) admin.renderCategoriesList();
                 });
 
-                // Movies Listener
                 onSnapshot(query(collection(db, "movies"), orderBy("createdAt", "desc")), (snapshot) => {
                     state.movies = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
                     ui.renderHome();
@@ -414,27 +414,25 @@
                 document.getElementById('footer-site-name').innerText = state.settings.siteName;
                 document.getElementById('footer-year').innerText = new Date().getFullYear();
                 
-                // Toggle sections
-                if(state.settings.toggles.showFooter) document.getElementById('footer').classList.remove('hidden');
-                else document.getElementById('footer').classList.add('hidden');
+                state.settings.toggles.showFooter 
+                    ? document.getElementById('footer').classList.remove('hidden') 
+                    : document.getElementById('footer').classList.add('hidden');
 
-                if(state.settings.toggles.showSearch) document.getElementById('search-container').classList.remove('hidden');
-                else document.getElementById('search-container').classList.add('hidden');
+                state.settings.toggles.showSearch 
+                    ? document.getElementById('search-container').classList.remove('hidden') 
+                    : document.getElementById('search-container').classList.add('hidden');
                 
-                ui.renderHome(); // Re-render content based on settings
+                ui.renderHome();
             },
             renderHome: () => {
                 const app = document.getElementById('app');
-                // Filter published movies for public
                 const published = state.movies.filter(m => m.status === 'published');
                 
-                if (!state.settings) return; // Wait for settings
+                if (!state.settings) return; 
 
                 let html = `
-                    <!-- Hero Section -->
                     <div class="relative w-full h-[60vh] rounded-2xl overflow-hidden mb-12 shadow-2xl group">
                         <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent z-10"></div>
-                        <!-- Random Featured Movie as BG -->
                         <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" 
                              style="background-image: url('${published.length ? published[0].posterUrl : ''}')">
                         </div>
@@ -445,7 +443,6 @@
                     </div>
                 `;
 
-                // Render Categories/Sections
                 const renderRow = (title, movies) => {
                     if (movies.length === 0) return '';
                     return `
@@ -458,19 +455,16 @@
                     `;
                 };
 
-                // Search Filter
                 let displayMovies = published;
                 if (state.filter) {
                     displayMovies = published.filter(m => m.title.toLowerCase().includes(state.filter.toLowerCase()));
                     html += renderRow(`Search Results`, displayMovies);
                 } else {
-                    // Standard Sections
                     if (state.settings.toggles.showTrending) {
                         const trending = [...published].sort((a,b) => (b.trendingScore || 0) - (a.trendingScore || 0)).slice(0, 5);
                         html += renderRow("Trending Now", trending);
                     }
 
-                    // Dynamic Categories
                     state.categories.forEach(cat => {
                         if (cat.enabled) {
                             const catMovies = published.filter(m => m.categorySlugs && m.categorySlugs.includes(cat.slug));
@@ -478,7 +472,6 @@
                         }
                     });
 
-                    // Recently Added
                     html += renderRow("Recently Added", published.slice(0, 10));
                 }
 
@@ -522,7 +515,7 @@
                 watchBtn.href = m.watchUrl;
                 
                 const dlBtn = document.getElementById('movie-modal-download');
-                if (m.downloadUrl && state.settings.toggles.allowDownloads !== false) { // Check if disabled in settings (implied)
+                if (m.downloadUrl && state.settings.toggles.allowDownloads !== false) { 
                      dlBtn.href = m.downloadUrl;
                      dlBtn.classList.remove('hidden');
                 } else {
@@ -555,7 +548,6 @@
                 if (tabName === 'categories') admin.renderCategoriesList();
                 if (tabName === 'settings') admin.renderSettingsForm();
             },
-            // Movies
             renderMoviesList: () => {
                 const list = document.getElementById('admin-movies-list');
                 list.innerHTML = state.movies.map(m => `
@@ -573,10 +565,15 @@
             openMovieEditor: (id = null) => {
                 const form = document.getElementById('movie-form');
                 form.reset();
+                // Reset progress bar
+                document.getElementById('upload-progress-container').classList.add('hidden');
+                document.getElementById('upload-progress-bar').style.width = '0%';
+                document.getElementById('upload-status-text').innerText = '';
+
                 document.getElementById('edit-id').value = id || '';
                 document.getElementById('editor-title').innerText = id ? 'Edit Movie' : 'Add Movie';
                 
-                // Render Category checkboxes
+                // Render Categories
                 const catContainer = document.getElementById('edit-categories');
                 catContainer.innerHTML = state.categories.map(cat => `
                     <label class="inline-flex items-center space-x-2 bg-gray-800 px-3 py-1 rounded cursor-pointer">
@@ -596,7 +593,6 @@
                     document.getElementById('edit-posterUrl').value = m.posterUrl;
                     document.getElementById('edit-trendingScore').value = m.trendingScore || 0;
                     
-                    // Check categories
                     const inputs = document.querySelectorAll('input[name="cat"]');
                     inputs.forEach(input => {
                         if(m.categorySlugs && m.categorySlugs.includes(input.value)) input.checked = true;
@@ -606,34 +602,80 @@
             },
             handleMovieSave: async (e) => {
                 e.preventDefault();
+                const saveBtn = document.getElementById('btn-save-movie');
+                saveBtn.disabled = true;
+                saveBtn.innerText = 'Saving...';
+
                 const id = document.getElementById('edit-id').value;
                 const fileInput = document.getElementById('edit-poster-file');
+                const titleInput = document.getElementById('edit-title').value;
                 let posterUrl = document.getElementById('edit-posterUrl').value;
 
-                // Handle Image Upload
+                // --- ROBUST IMAGEKIT UPLOAD ---
                 if (fileInput.files.length > 0) {
                     const file = fileInput.files[0];
-                    const progress = document.getElementById('upload-progress');
-                    progress.classList.remove('hidden');
-                    progress.children[0].style.width = '50%';
                     
+                    // Validation
+                    if (file.size > 10 * 1024 * 1024) {
+                        utils.showToast("File too large (Max 10MB)", "error");
+                        saveBtn.disabled = false;
+                        saveBtn.innerText = 'Save Movie';
+                        return;
+                    }
+
+                    const progressContainer = document.getElementById('upload-progress-container');
+                    const progressBar = document.getElementById('upload-progress-bar');
+                    const statusText = document.getElementById('upload-status-text');
+                    
+                    progressContainer.classList.remove('hidden');
+                    statusText.innerText = 'Authenticating...';
+
                     try {
-                        const res = await imagekit.upload({
-                            file: file,
-                            fileName: file.name,
-                            tags: ["movie_poster"]
+                        // 1. Fetch Auth Parameters Manually
+                        const authRes = await fetch(IK_AUTH_ENDPOINT);
+                        if (!authRes.ok) throw new Error('Auth server error');
+                        const authData = await authRes.json();
+                        
+                        // 2. Instantiate SDK with Public Key + URL Endpoint
+                        const imagekit = new ImageKit({
+                            publicKey: IK_PUBLIC_KEY,
+                            urlEndpoint: IK_URL_ENDPOINT
                         });
-                        posterUrl = res.url;
-                        progress.children[0].style.width = '100%';
+
+                        statusText.innerText = 'Uploading...';
+
+                        // 3. Upload using returned auth tokens
+                        const result = await new Promise((resolve, reject) => {
+                            imagekit.upload({
+                                file: file,
+                                fileName: utils.slugify(titleInput || 'poster') + '-' + Date.now(),
+                                tags: ["movie_poster"],
+                                token: authData.token,
+                                signature: authData.signature,
+                                expire: authData.expire,
+                                useUniqueFileName: true
+                            }, (err, result) => {
+                                if (err) reject(err);
+                                else resolve(result);
+                            });
+                        });
+                        
+                        // Success
+                        progressBar.style.width = '100%';
+                        statusText.innerText = 'Upload Complete';
+                        posterUrl = result.url;
+                        
                     } catch (err) {
-                        utils.showToast('Image Upload Failed', 'error');
-                        console.error(err);
+                        console.error("Upload Error:", err);
+                        utils.showToast('Image Upload Failed: ' + (err.message || 'Unknown'), 'error');
+                        saveBtn.disabled = false;
+                        saveBtn.innerText = 'Save Movie';
                         return;
                     }
                 }
 
                 const dataPayload = {
-                    title: document.getElementById('edit-title').value,
+                    title: titleInput,
                     year: document.getElementById('edit-year').value,
                     description: document.getElementById('edit-desc').value,
                     watchUrl: document.getElementById('edit-watchUrl').value,
@@ -656,8 +698,11 @@
                     }
                     ui.toggleModal('editor-modal', false);
                 } catch (err) {
-                    utils.showToast('Error saving movie', 'error');
+                    utils.showToast('Error saving movie to DB', 'error');
                     console.error(err);
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.innerText = 'Save Movie';
                 }
             },
             deleteMovie: async (id) => {
@@ -666,8 +711,6 @@
                     utils.showToast('Movie Deleted');
                 }
             },
-            
-            // Categories
             renderCategoriesList: () => {
                 const div = document.getElementById('admin-categories-list');
                 div.innerHTML = state.categories.map(cat => `
@@ -685,7 +728,7 @@
             addCategory: async () => {
                 const name = prompt("Category Name:");
                 if (!name) return;
-                const slug = name.toLowerCase().replace(/ /g, '-');
+                const slug = utils.slugify(name);
                 await addDoc(collection(db, "categories"), {
                     name, slug, enabled: true, order: state.categories.length + 1
                 });
@@ -693,8 +736,6 @@
             deleteCategory: async (id) => {
                 if(confirm('Delete Category?')) await deleteDoc(doc(db, "categories", id));
             },
-
-            // Settings
             renderSettingsForm: () => {
                 const s = state.settings;
                 document.getElementById('set-siteName').value = s.siteName;
@@ -741,15 +782,12 @@
             }
         };
 
-        // Auth Listeners
         onAuthStateChanged(auth, (user) => {
             state.user = user;
             const authSection = document.getElementById('auth-section');
             
             if (user) {
-                // Check Admin
                 state.isAdmin = (user.email === ADMIN_EMAIL);
-                
                 authSection.innerHTML = `
                     <div class="flex items-center gap-4">
                         ${state.isAdmin ? `<button onclick="router.navigate('admin')" class="text-sm bg-gray-800 border border-gray-600 px-3 py-1 rounded text-red-400 hover:text-red-300">Admin Panel</button>` : ''}
@@ -759,15 +797,14 @@
                     </div>
                 `;
                 ui.toggleModal('auth-modal', false);
-                data.init(); // Load data only when authed
+                data.init(); 
             } else {
                 state.isAdmin = false;
                 authSection.innerHTML = `<button onclick="ui.toggleModal('auth-modal', true)" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition">Login</button>`;
-                ui.toggleModal('auth-modal', true); // Force login
+                ui.toggleModal('auth-modal', true); 
             }
         });
 
-        // Event Bindings
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -790,15 +827,12 @@
 
         document.getElementById('theme-toggle').addEventListener('click', utils.toggleDarkMode);
 
-        // Expose admin functions to window scope for HTML onclick attributes
         window.admin = admin;
         window.ui = ui;
         window.router = router;
 
-        // Init Form Handler
         document.getElementById('movie-form').addEventListener('submit', admin.handleMovieSave);
 
-        // Initial Routing check
         if(window.location.hash === '#admin') router.navigate('admin');
         else router.navigate('home');
 
