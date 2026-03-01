@@ -8,6 +8,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Tailwind Config -->
     <script>
+        // DARK MODE INIT (Immediate)
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -47,7 +54,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .glass-dark {
-            background: rgba(17, 24, 39, 0.85);
+            background: rgba(17, 24, 39, 0.95);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
@@ -72,12 +79,12 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col">
 
     <!-- Navbar -->
-    <nav class="fixed w-full z-50 glass-dark">
+    <nav class="fixed w-full z-50 glass-dark shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
+            <div class="flex items-center justify-between h-16 gap-4">
                 <!-- Logo -->
                 <div class="flex-shrink-0 cursor-pointer flex items-center gap-2" onclick="router.navigate('home')">
                     <img id="nav-logo-img" class="h-8 hidden" alt="Logo">
@@ -86,32 +93,50 @@
                     </span>
                 </div>
                 
-                <!-- Search -->
-                <div class="hidden md:block flex-1 max-w-md mx-8" id="search-container">
-                    <div class="relative">
-                        <input type="text" id="global-search" placeholder="Search..." 
-                            class="w-full bg-gray-800 text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary border border-gray-700">
-                    </div>
+                <!-- Search & Filters -->
+                <div class="hidden md:flex flex-1 max-w-2xl mx-4 gap-2" id="search-container">
+                    <input type="text" id="global-search" placeholder="Search..." 
+                        class="flex-grow bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary border border-gray-300 dark:border-gray-700">
+                    
+                    <select id="filter-lang" class="bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary text-sm">
+                        <option value="all">All Lang</option>
+                        <option value="en">English</option>
+                        <option value="bn">Bangla</option>
+                        <option value="hi">Hindi</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ko">Korean</option>
+                    </select>
+
+                    <select id="filter-year" class="bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary text-sm">
+                        <option value="all">All Years</option>
+                        <!-- Populated by JS -->
+                    </select>
                 </div>
 
                 <!-- Right Menu -->
                 <div class="flex items-center gap-4">
-                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-700 transition">🌙</button>
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-300 dark:hover:bg-gray-700 transition">
+                        <span id="theme-icon">🌙</span>
+                    </button>
                     <div id="auth-section"><!-- Injected via JS --></div>
                 </div>
+            </div>
+            <!-- Mobile Filters (visible only on mobile) -->
+            <div class="md:hidden flex gap-2 pb-3" id="mobile-filters">
+                <input type="text" id="mobile-search" placeholder="Search..." class="w-full bg-gray-800 rounded px-2 py-1 text-sm border border-gray-700">
             </div>
         </div>
     </nav>
 
     <!-- Main Content Area -->
-    <main id="app" class="flex-grow pt-20 px-4 max-w-7xl mx-auto w-full min-h-screen">
+    <main id="app" class="flex-grow pt-24 px-4 max-w-7xl mx-auto w-full min-h-screen">
         <div class="flex justify-center items-center h-64">
             <div class="loader"></div>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer id="footer" class="border-t border-gray-800 mt-12 bg-gray-900 pt-12 pb-8 hidden">
+    <footer id="footer" class="border-t border-gray-200 dark:border-gray-800 mt-12 bg-gray-200 dark:bg-gray-900 pt-12 pb-8 hidden">
         <div class="max-w-7xl mx-auto px-4 flex flex-col items-center">
             <!-- Social Links -->
             <div id="social-links-container" class="flex gap-6 mb-8 hidden">
@@ -123,28 +148,26 @@
         </div>
     </footer>
 
-    <!-- Modals -->
-    
     <!-- Auth Modal -->
     <div id="auth-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm fade-in">
-        <div class="bg-gray-800 rounded-xl p-8 max-w-sm w-full shadow-2xl border border-gray-700 relative">
-            <button onclick="ui.toggleModal('auth-modal', false)" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
-            <h2 id="auth-title" class="text-2xl font-bold mb-2 text-center">Sign In</h2>
-            <p id="auth-subtitle" class="text-center text-gray-400 text-sm mb-6">Welcome back to the library</p>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700 relative">
+            <button onclick="ui.toggleModal('auth-modal', false)" class="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white">&times;</button>
+            <h2 id="auth-title" class="text-2xl font-bold mb-2 text-center text-gray-900 dark:text-white">Sign In</h2>
+            <p id="auth-subtitle" class="text-center text-gray-500 dark:text-gray-400 text-sm mb-6">Welcome back to the library</p>
             
             <form id="auth-form" class="space-y-4">
-                <input type="email" id="email" placeholder="Email Address" required class="w-full bg-gray-700 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary">
-                <input type="password" id="password" placeholder="Password" required class="w-full bg-gray-700 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                <input type="email" id="email" placeholder="Email Address" required class="w-full bg-gray-100 dark:bg-gray-700 rounded p-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                <input type="password" id="password" placeholder="Password" required class="w-full bg-gray-100 dark:bg-gray-700 rounded p-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary">
                 
                 <button type="submit" id="btn-auth-submit" class="w-full bg-primary hover:opacity-90 text-white font-bold py-3 rounded transition">Sign In</button>
                 
-                <div id="auth-error" class="text-red-400 text-sm text-center hidden p-2 bg-red-900/20 rounded border border-red-800"></div>
+                <div id="auth-error" class="text-red-500 dark:text-red-400 text-sm text-center hidden p-2 bg-red-100 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800"></div>
             </form>
 
             <div class="mt-4 text-center space-y-2">
-                <button onclick="authManager.toggleMode()" id="auth-toggle-btn" class="text-sm text-blue-400 hover:text-blue-300">New here? Create an account</button>
+                <button onclick="authManager.toggleMode()" id="auth-toggle-btn" class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500">New here? Create an account</button>
                 <div class="block">
-                    <button onclick="authManager.forgotPassword()" class="text-xs text-gray-500 hover:text-gray-300">Forgot Password?</button>
+                    <button onclick="authManager.forgotPassword()" class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Forgot Password?</button>
                 </div>
             </div>
         </div>
@@ -166,25 +189,26 @@
     </div>
 
     <!-- Movie Details Modal -->
-    <div id="movie-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-90 backdrop-blur-md fade-in">
-        <div class="bg-gray-900 rounded-2xl max-w-5xl w-full mx-4 overflow-hidden shadow-2xl border border-gray-700 flex flex-col md:flex-row max-h-[90vh]">
-            <div id="movie-modal-poster" class="w-full md:w-1/3 bg-cover bg-center h-64 md:h-auto"></div>
+    <div id="movie-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-90 backdrop-blur-md fade-in p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl max-w-5xl w-full mx-auto overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row max-h-[90vh]">
+            <div id="movie-modal-poster" class="w-full md:w-1/3 bg-cover bg-center h-48 md:h-auto shrink-0"></div>
             <div class="p-8 w-full md:w-2/3 flex flex-col overflow-y-auto">
                 <div class="flex justify-between items-start">
-                    <h2 id="movie-modal-title" class="text-3xl font-bold text-white mb-2"></h2>
-                    <button onclick="ui.toggleModal('movie-modal', false)" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                    <h2 id="movie-modal-title" class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2"></h2>
+                    <button onclick="ui.toggleModal('movie-modal', false)" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-3xl leading-none">&times;</button>
                 </div>
-                <div class="flex items-center gap-3 text-sm text-gray-400 mb-4">
-                    <span id="movie-modal-year" class="bg-gray-800 px-2 py-1 rounded"></span>
-                    <span id="movie-modal-rating" class="text-yellow-400 font-bold"></span>
+                <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <span id="movie-modal-year" class="bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded border border-gray-300 dark:border-gray-700"></span>
+                    <span id="movie-modal-lang" class="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-2 py-1 rounded uppercase"></span>
+                    <span id="movie-modal-rating" class="text-yellow-500 font-bold"></span>
                 </div>
-                <p id="movie-modal-desc" class="text-gray-300 leading-relaxed mb-6"></p>
+                <p id="movie-modal-desc" class="text-gray-700 dark:text-gray-300 leading-relaxed mb-6"></p>
                 
                 <div class="mt-auto space-y-3">
                     <a id="movie-modal-watch" href="#" target="_blank" class="block w-full text-center bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-blue-500/30">
                         ▶ Watch Now
                     </a>
-                    <a id="movie-modal-download" href="#" target="_blank" class="hidden block w-full text-center border border-gray-600 hover:bg-gray-800 text-white py-3 rounded-lg transition">
+                    <a id="movie-modal-download" href="#" target="_blank" class="hidden block w-full text-center border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-white py-3 rounded-lg transition">
                         ⬇ Download
                     </a>
                 </div>
@@ -193,31 +217,31 @@
     </div>
 
     <!-- Admin Panel -->
-    <div id="admin-panel" class="fixed inset-0 z-[55] hidden bg-gray-900 overflow-y-auto">
+    <div id="admin-panel" class="fixed inset-0 z-[55] hidden bg-gray-50 dark:bg-gray-900 overflow-y-auto">
         <div class="max-w-6xl mx-auto px-4 py-8">
             <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">Admin Dashboard</h1>
-                <button onclick="router.navigate('home')" class="bg-gray-800 px-4 py-2 rounded text-white hover:bg-gray-700">Exit Admin</button>
+                <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-blue-600">Admin Dashboard</h1>
+                <button onclick="router.navigate('home')" class="bg-gray-200 dark:bg-gray-800 px-4 py-2 rounded text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-700">Exit Admin</button>
             </div>
 
             <!-- Tabs -->
-            <div class="flex space-x-2 border-b border-gray-700 mb-6 overflow-x-auto pb-2">
-                <button onclick="admin.switchTab('movies')" class="admin-tab whitespace-nowrap px-4 py-2 text-white border-b-2 border-primary" data-tab="movies">Movies</button>
-                <button onclick="admin.switchTab('categories')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-400 hover:text-white" data-tab="categories">Categories</button>
-                <button onclick="admin.switchTab('notifications')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-400 hover:text-white" data-tab="notifications">Notifications</button>
-                <button onclick="admin.switchTab('settings')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-400 hover:text-white" data-tab="settings">Settings</button>
+            <div class="flex space-x-2 border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto pb-2">
+                <button onclick="admin.switchTab('movies')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-900 dark:text-white border-b-2 border-primary" data-tab="movies">Movies</button>
+                <button onclick="admin.switchTab('categories')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" data-tab="categories">Categories</button>
+                <button onclick="admin.switchTab('notifications')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" data-tab="notifications">Notifications</button>
+                <button onclick="admin.switchTab('settings')" class="admin-tab whitespace-nowrap px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" data-tab="settings">Settings</button>
             </div>
 
             <!-- Tab: Movies -->
             <div id="tab-movies" class="admin-content">
                 <div class="flex justify-between mb-4">
-                    <h2 class="text-xl font-semibold">Library Content</h2>
+                    <h2 class="text-xl font-semibold dark:text-white">Library Content</h2>
                     <button onclick="admin.openMovieEditor()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">+ Add Movie</button>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-gray-400">
-                        <thead class="bg-gray-800 text-gray-200 uppercase"><tr><th class="p-3">Title</th><th class="p-3">Status</th><th class="p-3">Actions</th></tr></thead>
-                        <tbody id="admin-movies-list" class="divide-y divide-gray-800"></tbody>
+                <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+                    <table class="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+                        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 uppercase"><tr><th class="p-3">Title</th><th class="p-3">Status</th><th class="p-3">Actions</th></tr></thead>
+                        <tbody id="admin-movies-list" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
                     </table>
                 </div>
             </div>
@@ -225,7 +249,7 @@
             <!-- Tab: Categories -->
             <div id="tab-categories" class="admin-content hidden">
                 <div class="flex justify-between mb-4">
-                    <h2 class="text-xl font-semibold">Manage Categories</h2>
+                    <h2 class="text-xl font-semibold dark:text-white">Manage Categories</h2>
                     <button onclick="admin.addCategory()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">+ Add Category</button>
                 </div>
                 <div id="admin-categories-list" class="space-y-2"></div>
@@ -234,7 +258,7 @@
             <!-- Tab: Notifications -->
             <div id="tab-notifications" class="admin-content hidden">
                 <div class="flex justify-between mb-4">
-                    <h2 class="text-xl font-semibold">Popup Notifications</h2>
+                    <h2 class="text-xl font-semibold dark:text-white">Popup Notifications</h2>
                     <button onclick="admin.openNotifEditor()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">+ New Notification</button>
                 </div>
                 <div id="admin-notif-list" class="space-y-4"></div>
@@ -243,113 +267,129 @@
             <!-- Tab: Settings -->
             <div id="tab-settings" class="admin-content hidden space-y-6 max-w-4xl">
                 <!-- Site Identity -->
-                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                    <h3 class="text-lg font-bold text-white mb-4">Site Identity</h3>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Site Identity</h3>
                     <div class="grid md:grid-cols-2 gap-4">
-                        <input type="text" id="set-siteName" placeholder="Site Name" class="bg-gray-700 p-2 rounded text-white w-full">
+                        <input type="text" id="set-siteName" placeholder="Site Name" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600">
                         <div class="flex gap-2">
-                             <input type="text" id="set-logoUrl" placeholder="Logo URL" class="bg-gray-700 p-2 rounded text-white w-full">
-                             <button onclick="document.getElementById('set-logo-file').click()" class="bg-gray-600 px-3 rounded text-white">Upload</button>
-                             <input type="file" id="set-logo-file" class="hidden" onchange="admin.handleUpload(this, 'set-logoUrl')">
+                             <input type="text" id="set-logoUrl" placeholder="Logo URL" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600">
+                             <button onclick="document.getElementById('set-logo-file').click()" class="bg-gray-200 dark:bg-gray-600 px-3 rounded text-gray-900 dark:text-white">Upload</button>
+                             <input type="file" id="set-logo-file" class="hidden" onchange="admin.handleUpload(this, 'set-logoUrl', 'upload-status-logo')">
+                             <span id="upload-status-logo" class="text-xs text-green-500 self-center"></span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Featured & Hero -->
-                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                    <h3 class="text-lg font-bold text-white mb-4">Hero Section</h3>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Hero Section</h3>
                     <div class="grid md:grid-cols-1 gap-4">
                          <div>
-                            <label class="text-sm text-gray-400">Featured Movie (Hero Background)</label>
-                            <select id="set-featuredMovie" class="bg-gray-700 p-2 rounded text-white w-full mt-1"></select>
+                            <label class="text-sm text-gray-500 dark:text-gray-400">Featured Movie (Hero Background)</label>
+                            <select id="set-featuredMovie" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white w-full mt-1 border border-gray-300 dark:border-gray-600"></select>
                          </div>
-                        <input type="text" id="set-heroTitle" placeholder="Hero Title" class="bg-gray-700 p-2 rounded text-white w-full">
-                        <input type="text" id="set-heroSubtitle" placeholder="Hero Subtitle" class="bg-gray-700 p-2 rounded text-white w-full">
+                        <input type="text" id="set-heroTitle" placeholder="Hero Title" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600">
+                        <input type="text" id="set-heroSubtitle" placeholder="Hero Subtitle" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600">
                     </div>
                 </div>
 
                 <!-- Appearance & Layout -->
-                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                    <h3 class="text-lg font-bold text-white mb-4">Appearance</h3>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Appearance</h3>
                     <div class="grid md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label class="text-sm text-gray-400">Primary Color</label>
+                            <label class="text-sm text-gray-500 dark:text-gray-400">Primary Color</label>
                             <input type="color" id="set-primaryColor" class="w-full h-10 rounded mt-1 cursor-pointer">
                         </div>
                         <div>
-                            <label class="text-sm text-gray-400">Poster Style</label>
-                            <select id="set-posterStyle" class="bg-gray-700 p-2 rounded text-white w-full mt-1">
-                                <option value="poster">Vertical (2:3)</option>
-                                <option value="backdrop">Thumbnail (16:9)</option>
+                            <label class="text-sm text-gray-500 dark:text-gray-400">Poster Style</label>
+                            <select id="set-posterStyle" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white w-full mt-1 border border-gray-300 dark:border-gray-600">
+                                <option value="poster">Vertical (2:3) - Best for Movies</option>
+                                <option value="backdrop">Thumbnail (16:9) - Best for Videos</option>
                             </select>
                         </div>
                     </div>
-                    <label class="text-sm text-gray-400 block mb-2">Homepage Section Order (Comma separated: trending, categories, recent, social)</label>
-                    <input type="text" id="set-sectionOrder" class="bg-gray-700 p-2 rounded text-white w-full">
+                    <label class="text-sm text-gray-500 dark:text-gray-400 block mb-2">Homepage Section Order (trending, categories, recent, social)</label>
+                    <input type="text" id="set-sectionOrder" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600">
                 </div>
 
                 <!-- Social Links -->
-                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                    <h3 class="text-lg font-bold text-white mb-4">Social Links</h3>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Social Links</h3>
                     <div class="grid md:grid-cols-3 gap-4">
-                        <input type="text" id="set-social-youtube" placeholder="YouTube URL" class="bg-gray-700 p-2 rounded text-white">
-                        <input type="text" id="set-social-telegram" placeholder="Telegram URL" class="bg-gray-700 p-2 rounded text-white">
-                        <input type="text" id="set-social-x" placeholder="X (Twitter) URL" class="bg-gray-700 p-2 rounded text-white">
+                        <input type="text" id="set-social-youtube" placeholder="YouTube URL" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+                        <input type="text" id="set-social-telegram" placeholder="Telegram URL" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+                        <input type="text" id="set-social-x" placeholder="X (Twitter) URL" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
                     </div>
                 </div>
 
                 <!-- Admin Management -->
-                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                    <h3 class="text-lg font-bold text-white mb-4">Admins</h3>
-                    <p class="text-xs text-gray-400 mb-2">Separate emails with commas. Be careful.</p>
-                    <textarea id="set-admins" rows="3" class="bg-gray-700 p-2 rounded text-white w-full"></textarea>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Admins</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Separate emails with commas.</p>
+                    <textarea id="set-admins" rows="3" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600"></textarea>
                 </div>
 
                 <!-- Toggles -->
-                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                    <h3 class="text-lg font-bold text-white mb-4">Feature Toggles</h3>
-                    <div class="flex gap-4 flex-wrap" id="set-toggles"></div>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Configuration</h3>
+                    <div class="flex gap-4 flex-wrap mb-4" id="set-toggles"></div>
+                    <div class="mt-4">
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Notification Delay (Seconds)</label>
+                        <input type="number" id="set-notifDelay" class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-gray-900 dark:text-white w-24 ml-2 border border-gray-300 dark:border-gray-600" value="5">
+                    </div>
                 </div>
                 
-                <button onclick="admin.saveSettings()" class="bg-primary hover:opacity-90 text-white px-8 py-3 rounded font-bold w-full">Save All Settings</button>
+                <button onclick="admin.saveSettings()" class="bg-primary hover:opacity-90 text-white px-8 py-3 rounded font-bold w-full shadow-lg">Save All Settings</button>
             </div>
         </div>
     </div>
 
     <!-- Movie Editor (Admin) -->
     <div id="editor-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-90 backdrop-blur">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
-            <h2 class="text-xl font-bold mb-4" id="editor-title">Edit Movie</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold mb-4 dark:text-white" id="editor-title">Edit Movie</h2>
             <form id="movie-form" class="space-y-3">
                 <input type="hidden" id="edit-id">
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="edit-title" placeholder="Movie Title" required class="bg-gray-700 p-2 rounded text-white w-full">
-                    <input type="number" id="edit-year" placeholder="Year" required class="bg-gray-700 p-2 rounded text-white w-full">
+                    <input type="text" id="edit-title" placeholder="Movie Title" required class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full">
+                    <input type="number" id="edit-year" placeholder="Year" required class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full">
                 </div>
-                <textarea id="edit-desc" placeholder="Description" rows="3" class="bg-gray-700 p-2 rounded text-white w-full"></textarea>
-                
-                <!-- Poster Upload -->
-                <div class="border border-dashed border-gray-600 p-4 rounded text-center relative">
-                    <p class="text-sm text-gray-400 mb-2">Poster/Thumbnail Image</p>
-                    <input type="file" id="edit-poster-file" accept="image/*" class="text-sm text-gray-400 w-full" onchange="admin.handleUpload(this, 'edit-posterUrl')">
-                    <input type="hidden" id="edit-posterUrl">
-                    <p id="upload-status-movie" class="text-xs text-green-400 mt-1 h-4"></p>
-                </div>
-
-                <input type="url" id="edit-watchUrl" placeholder="Watch URL" required class="bg-gray-700 p-2 rounded text-white w-full">
-                <input type="url" id="edit-downloadUrl" placeholder="Download URL (Optional)" class="bg-gray-700 p-2 rounded text-white w-full">
                 
                 <div class="grid grid-cols-2 gap-4">
-                    <select id="edit-status" class="bg-gray-700 p-2 rounded text-white"><option value="draft">Draft</option><option value="published">Published</option></select>
-                    <input type="number" id="edit-trendingScore" placeholder="Trending Score (0-100)" class="bg-gray-700 p-2 rounded text-white">
+                    <select id="edit-lang" class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full">
+                        <option value="en">English</option>
+                        <option value="bn">Bangla</option>
+                        <option value="hi">Hindi</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ko">Korean</option>
+                    </select>
+                    <input type="number" id="edit-trendingScore" placeholder="Score (0-100)" class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white">
                 </div>
 
-                <div class="bg-gray-700 p-3 rounded">
-                    <p class="text-sm text-gray-300 mb-2">Categories</p>
+                <textarea id="edit-desc" placeholder="Description" rows="3" class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full"></textarea>
+                
+                <!-- Poster Upload -->
+                <div class="border border-dashed border-gray-400 dark:border-gray-600 p-4 rounded text-center relative">
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Poster/Thumbnail Image</p>
+                    <input type="file" id="edit-poster-file" accept="image/*" class="text-sm text-gray-500 w-full" onchange="admin.handleUpload(this, 'edit-posterUrl', 'upload-status-movie')">
+                    <input type="hidden" id="edit-posterUrl">
+                    <p id="upload-status-movie" class="text-xs text-green-500 mt-1 h-4"></p>
+                </div>
+
+                <input type="url" id="edit-watchUrl" placeholder="Watch URL" required class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full">
+                <input type="url" id="edit-downloadUrl" placeholder="Download URL (Optional)" class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full">
+                
+                <div class="grid grid-cols-1">
+                    <select id="edit-status" class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white"><option value="draft">Draft</option><option value="published">Published</option></select>
+                </div>
+
+                <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                    <p class="text-sm dark:text-gray-300 mb-2">Categories</p>
                     <div id="edit-categories" class="flex flex-wrap gap-2"></div>
                 </div>
                 <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" onclick="ui.toggleModal('editor-modal', false)" class="text-gray-400">Cancel</button>
+                    <button type="button" onclick="ui.toggleModal('editor-modal', false)" class="text-gray-500 hover:text-gray-800 dark:hover:text-white">Cancel</button>
                     <button type="submit" id="btn-save-movie" class="bg-primary px-4 py-2 rounded text-white">Save Movie</button>
                 </div>
             </form>
@@ -358,30 +398,32 @@
 
     <!-- Notification Editor (Admin) -->
     <div id="notif-editor-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black bg-opacity-90 backdrop-blur">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-lg border border-gray-700">
-            <h2 class="text-xl font-bold mb-4" id="notif-editor-title">Edit Notification</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold mb-4 dark:text-white" id="notif-editor-title">Edit Notification</h2>
             <form id="notif-form" class="space-y-3">
                 <input type="hidden" id="notif-id">
-                <input type="text" id="notif-edit-title" placeholder="Title" required class="bg-gray-700 p-2 rounded text-white w-full">
-                <textarea id="notif-edit-message" placeholder="Message" rows="3" required class="bg-gray-700 p-2 rounded text-white w-full"></textarea>
+                <input type="text" id="notif-edit-title" placeholder="Title" required class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full">
+                <textarea id="notif-edit-message" placeholder="Message" rows="3" required class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full"></textarea>
                 
-                <div class="flex gap-2">
-                     <input type="text" id="notif-edit-imageUrl" placeholder="Image URL (Optional)" class="bg-gray-700 p-2 rounded text-white w-full">
-                     <button type="button" onclick="document.getElementById('notif-file').click()" class="bg-gray-600 px-2 rounded">Up</button>
-                     <input type="file" id="notif-file" class="hidden" onchange="admin.handleUpload(this, 'notif-edit-imageUrl')">
+                <div class="flex gap-2 items-center">
+                     <input type="text" id="notif-edit-imageUrl" placeholder="Image URL (Optional)" class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full">
+                     <button type="button" onclick="document.getElementById('notif-file').click()" class="bg-gray-300 dark:bg-gray-600 px-2 py-1 rounded">Up</button>
+                     <input type="file" id="notif-file" class="hidden" onchange="admin.handleUpload(this, 'notif-edit-imageUrl', 'upload-status-notif')">
                 </div>
-                <input type="text" id="notif-edit-linkUrl" placeholder="Action Link URL (Optional)" class="bg-gray-700 p-2 rounded text-white w-full">
+                <p id="upload-status-notif" class="text-xs text-green-500 h-4"></p>
+
+                <input type="text" id="notif-edit-linkUrl" placeholder="Action Link URL (Optional)" class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white w-full">
                 
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="number" id="notif-edit-priority" placeholder="Priority (High shows first)" class="bg-gray-700 p-2 rounded text-white">
-                    <input type="number" id="notif-edit-maxShows" placeholder="Max Shows Per User" value="1" class="bg-gray-700 p-2 rounded text-white">
+                    <input type="number" id="notif-edit-priority" placeholder="Priority (High shows first)" class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white">
+                    <input type="number" id="notif-edit-maxShows" placeholder="Max Shows Per User" value="1" class="bg-gray-100 dark:bg-gray-700 p-2 rounded dark:text-white">
                 </div>
-                <label class="flex items-center gap-2 text-white">
+                <label class="flex items-center gap-2 dark:text-white">
                     <input type="checkbox" id="notif-edit-enabled"> Enabled
                 </label>
 
                 <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" onclick="ui.toggleModal('notif-editor-modal', false)" class="text-gray-400">Cancel</button>
+                    <button type="button" onclick="ui.toggleModal('notif-editor-modal', false)" class="text-gray-500 dark:hover:text-white">Cancel</button>
                     <button type="submit" id="btn-save-notif" class="bg-primary px-4 py-2 rounded text-white">Save</button>
                 </div>
             </form>
@@ -407,10 +449,28 @@
             messagingSenderId: "187818385326",
             appId: "1:187818385326:web:4bdffca6053e08033c323f"
         };
-
+        
+        const BOOTSTRAP_ADMIN_EMAIL = "bristyxom@gmail.com";
         const IK_PUBLIC_KEY = "public_Wt+RjZXgdesltZmb4M/5SO8ncZk=";
         const IK_URL_ENDPOINT = "https://ik.imagekit.io/4maqtfplt";
-        const IK_AUTH_ENDPOINT = "/api/imagekit-auth";
+        const IK_AUTH_ENDPOINT = "/api/imagekit-auth"; // NOTE: User needs to ensure this exists or use client-side signature generation if no backend.
+
+        const DEFAULT_SETTINGS = {
+            siteName: "StreamVault",
+            logoUrl: "",
+            heroTitle: "Welcome",
+            heroSubtitle: "Stream your favorite content",
+            featuredMovieId: "",
+            posterStyle: "poster",
+            sectionOrder: ["trending", "categories", "recent", "social"],
+            theme: { primaryColor: "#3b82f6" },
+            toggles: { showFooter: true, showSearch: true, showTrending: true, showSocialSection: true },
+            socialLinks: { youtube: "", telegram: "", x: "" },
+            admins: [BOOTSTRAP_ADMIN_EMAIL],
+            notificationDelaySeconds: 5
+        };
+
+        const LANG_MAP = { en: "English", bn: "Bangla", hi: "Hindi", zh: "Chinese", ko: "Korean" };
 
         // INIT
         const app = initializeApp(firebaseConfig);
@@ -426,7 +486,9 @@
             movies: [],
             notifications: [],
             filter: '',
-            authMode: 'login', // 'login' or 'signup'
+            filterLang: 'all',
+            filterYear: 'all',
+            authMode: 'login',
             settingsLoaded: false
         };
 
@@ -442,7 +504,6 @@
                 document.getElementById('toast-msg').innerText = msg;
                 toast.classList.remove('translate-y-20');
                 toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded shadow-lg transform transition-transform duration-300 z-[90] border ${type === 'error' ? 'bg-red-900 border-red-700 text-white' : 'bg-gray-800 border-gray-700 text-white'}`;
-                
                 setTimeout(() => toast.classList.add('translate-y-20'), 3000);
             },
             slugify: (text) => text.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '')
@@ -461,7 +522,7 @@
                 if (state.user) {
                     authSection.innerHTML = `
                         <div class="flex items-center gap-4">
-                            ${state.isAdmin ? `<button onclick="router.navigate('admin')" class="text-xs bg-red-900/50 border border-red-500 text-red-100 px-3 py-1 rounded hover:bg-red-900">Admin</button>` : ''}
+                            ${state.isAdmin ? `<button onclick="router.navigate('admin')" class="text-xs bg-red-600 border border-red-500 text-white px-3 py-1 rounded hover:bg-red-700">Admin</button>` : ''}
                             <div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center font-bold text-white text-xs cursor-pointer" onclick="ui.logout()" title="Sign Out">
                                 ${state.user.email[0].toUpperCase()}
                             </div>
@@ -475,32 +536,32 @@
                 if (!state.settings) return;
                 const s = state.settings;
                 
-                // Theme & Meta
                 document.documentElement.style.setProperty('--primary-color', s.theme?.primaryColor || '#3b82f6');
                 document.title = `${s.siteName || 'StreamVault'} - Home`;
                 document.getElementById('nav-logo-text').innerText = s.siteName || 'StreamVault';
                 document.getElementById('footer-site-name').innerText = s.siteName || 'StreamVault';
                 document.getElementById('footer-year').innerText = new Date().getFullYear();
 
-                // Logo Image vs Text
                 const logoImg = document.getElementById('nav-logo-img');
                 const logoText = document.getElementById('nav-logo-text');
                 if (s.logoUrl) {
                     logoImg.src = s.logoUrl;
                     logoImg.classList.remove('hidden');
-                    logoText.classList.add('hidden'); // Or keep both depending on preference, removing hidden for now
-                    logoText.classList.add('md:block'); // Show text on desktop only maybe?
+                    logoText.classList.add('hidden'); 
+                    logoText.classList.add('md:block'); 
                 } else {
                     logoImg.classList.add('hidden');
                     logoText.classList.remove('hidden');
                 }
 
-                // Toggles
-                const toggleEl = (id, show) => document.getElementById(id).classList.toggle('hidden', !show);
-                toggleEl('footer', s.toggles?.showFooter);
-                toggleEl('search-container', s.toggles?.showSearch);
+                const toggleEl = (id, show) => {
+                    const el = document.getElementById(id);
+                    if(el) el.classList.toggle('hidden', !show);
+                };
+                toggleEl('footer', s.toggles?.showFooter ?? true);
+                toggleEl('search-container', s.toggles?.showSearch ?? true);
 
-                // Social Links
+                // Social Links (Footer)
                 const socialContainer = document.getElementById('social-links-container');
                 if (s.toggles?.showSocialSection && s.socialLinks) {
                     socialContainer.classList.remove('hidden');
@@ -512,7 +573,7 @@
                     };
                     Object.keys(s.socialLinks).forEach(key => {
                         if (s.socialLinks[key]) {
-                            socialContainer.innerHTML += `<a href="${s.socialLinks[key]}" target="_blank" class="text-gray-400 hover:text-white transition">${icons[key] || key}</a>`;
+                            socialContainer.innerHTML += `<a href="${s.socialLinks[key]}" target="_blank" class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition">${icons[key] || key}</a>`;
                         }
                     });
                 } else {
@@ -525,69 +586,116 @@
                 if (!state.settings || !state.settingsLoaded) return;
                 const published = state.movies.filter(m => m.status === 'published');
                 
-                // Hero Section
-                let heroMovie = published.length ? published[0] : null;
-                if (state.settings.featuredMovieId) {
-                    const found = published.find(m => m.id === state.settings.featuredMovieId);
-                    if (found) heroMovie = found;
+                // Update Year Filter Options
+                const years = [...new Set(published.map(m => m.year))].sort((a,b)=>b-a);
+                const yearSelect = document.getElementById('filter-year');
+                if(yearSelect.options.length <= 1) { // Populate only once or on major updates
+                    years.forEach(y => {
+                        const opt = document.createElement('option');
+                        opt.value = y;
+                        opt.innerText = y;
+                        yearSelect.appendChild(opt);
+                    });
                 }
+
+                // Filtering
+                const filtered = published.filter(m => {
+                    const matchText = (m.title||'').toLowerCase().includes(state.filter.toLowerCase());
+                    const matchLang = state.filterLang === 'all' || m.language === state.filterLang;
+                    const matchYear = state.filterYear === 'all' || m.year == state.filterYear;
+                    return matchText && matchLang && matchYear;
+                });
 
                 let html = '';
-                if (heroMovie && !state.filter) {
-                    html += `
-                        <div class="relative w-full h-[60vh] rounded-2xl overflow-hidden mb-12 shadow-2xl group cursor-pointer" onclick="ui.openMovie('${heroMovie.id}')">
-                            <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent z-10"></div>
-                            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" 
-                                 style="background-image: url('${heroMovie.posterUrl}')">
+
+                // Hero Section (Only show if not searching/filtering)
+                const isFiltering = state.filter || state.filterLang !== 'all' || state.filterYear !== 'all';
+                let heroMovie = null;
+                if (!isFiltering) {
+                    if (state.settings.featuredMovieId) {
+                        heroMovie = published.find(m => m.id === state.settings.featuredMovieId);
+                    }
+                    if (!heroMovie && published.length > 0) heroMovie = published[0];
+
+                    if (heroMovie) {
+                        html += `
+                            <div class="relative w-full h-[60vh] rounded-2xl overflow-hidden mb-12 shadow-2xl group cursor-pointer" onclick="ui.openMovie('${heroMovie.id}')">
+                                <div class="absolute inset-0 bg-gradient-to-t from-gray-100 dark:from-gray-900 via-gray-100/60 dark:via-gray-900/60 to-transparent z-10"></div>
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" 
+                                     style="background-image: url('${heroMovie.posterUrl}')">
+                                </div>
+                                <div class="absolute bottom-0 left-0 p-8 z-20 max-w-2xl fade-in">
+                                    <span class="bg-primary text-white text-xs px-2 py-1 rounded uppercase font-bold tracking-wider mb-2 inline-block">Featured</span>
+                                    <h1 class="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-2 drop-shadow-lg">${state.settings.heroTitle || 'Welcome'}</h1>
+                                    <p class="text-lg text-gray-800 dark:text-gray-200 mb-6 drop-shadow-md line-clamp-2">${state.settings.heroSubtitle || ''}</p>
+                                    <button class="bg-primary hover:bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/30 transition flex items-center gap-2">
+                                        <span>▶ Watch Now</span>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="absolute bottom-0 left-0 p-8 z-20 max-w-2xl fade-in">
-                                <span class="bg-primary text-white text-xs px-2 py-1 rounded uppercase font-bold tracking-wider mb-2 inline-block">Featured</span>
-                                <h1 class="text-4xl md:text-6xl font-bold text-white mb-2 drop-shadow-lg">${state.settings.heroTitle || 'Welcome'}</h1>
-                                <p class="text-lg text-gray-200 mb-6 drop-shadow-md line-clamp-2">${state.settings.heroSubtitle || ''}</p>
-                                <button class="bg-primary hover:bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/30 transition flex items-center gap-2">
-                                    <span>▶ Watch Now</span>
-                                </button>
-                            </div>
-                        </div>
-                    `;
+                        `;
+                    }
                 }
 
-                const renderRow = (title, movies) => {
-                    if (!movies.length) return '';
-                    // Grid adaption based on poster style
+                const renderRow = (title, moviesList) => {
+                    if (!moviesList.length) return '';
                     const isBackdrop = state.settings.posterStyle === 'backdrop';
+                    // 3 cols for backdrop, 5 cols for poster (on lg screens)
                     const gridClass = isBackdrop 
                         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
                         : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6";
 
                     return `
                         <div class="mb-12 fade-in">
-                            <h2 class="text-2xl font-bold mb-6 pl-2 border-l-4 border-primary text-white flex items-center gap-2">
-                                ${title} <span class="text-xs text-gray-500 font-normal ml-2">(${movies.length})</span>
+                            <h2 class="text-2xl font-bold mb-6 pl-2 border-l-4 border-primary text-gray-900 dark:text-white flex items-center gap-2">
+                                ${title} <span class="text-xs text-gray-500 font-normal ml-2">(${moviesList.length})</span>
                             </h2>
                             <div class="${gridClass}">
-                                ${movies.map(m => ui.components.movieCard(m, isBackdrop)).join('')}
+                                ${moviesList.map(m => ui.components.movieCard(m, isBackdrop)).join('')}
                             </div>
                         </div>
                     `;
                 };
 
-                // Filter Search
-                if (state.filter) {
-                    const hits = published.filter(m => m.title.toLowerCase().includes(state.filter.toLowerCase()));
-                    html += renderRow(`Search Results for "${state.filter}"`, hits);
+                const renderSocialSection = () => {
+                    if (!state.settings.socialLinks) return '';
+                    const s = state.settings.socialLinks;
+                    if (!s.youtube && !s.telegram && !s.x) return '';
+                    
+                    return `
+                    <div class="mb-12 fade-in bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+                        <h2 class="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Join Our Community</h2>
+                        <p class="text-gray-500 dark:text-gray-400 mb-6">Stay updated with latest releases</p>
+                        <div class="flex justify-center gap-4 flex-wrap">
+                            ${s.youtube ? `<a href="${s.youtube}" target="_blank" class="px-6 py-2 bg-red-600 text-white rounded-full font-bold hover:bg-red-700 transition">YouTube</a>` : ''}
+                            ${s.telegram ? `<a href="${s.telegram}" target="_blank" class="px-6 py-2 bg-blue-500 text-white rounded-full font-bold hover:bg-blue-600 transition">Telegram</a>` : ''}
+                            ${s.x ? `<a href="${s.x}" target="_blank" class="px-6 py-2 bg-black text-white rounded-full font-bold hover:bg-gray-800 transition">X (Twitter)</a>` : ''}
+                        </div>
+                    </div>
+                    `;
+                };
+
+                if (isFiltering) {
+                    html += renderRow(`Search Results`, filtered);
                 } else {
-                    // Dynamic Section Order
-                    const order = state.settings.sectionOrder || ['trending', 'categories', 'recent'];
+                    const order = state.settings.sectionOrder && state.settings.sectionOrder.length 
+                        ? state.settings.sectionOrder 
+                        : ['trending', 'categories', 'recent', 'social'];
                     
                     order.forEach(section => {
                         const s = section.trim().toLowerCase();
-                        if (s === 'trending' && state.settings.toggles.showTrending) {
+                        if (s === 'trending' && state.settings.toggles?.showTrending) {
                             const trending = [...published].sort((a,b) => (b.trendingScore || 0) - (a.trendingScore || 0)).slice(0, 5);
                             html += renderRow("Trending Now 🔥", trending);
                         }
                         else if (s === 'recent') {
-                            html += renderRow("Recently Added", published.slice(0, 10));
+                            // Sort by createdAt desc if possible, else year
+                            const recent = [...published].sort((a,b) => {
+                                const ta = a.createdAt?.seconds || 0;
+                                const tb = b.createdAt?.seconds || 0;
+                                return tb - ta;
+                            }).slice(0, 10);
+                            html += renderRow("Recently Added", recent);
                         }
                         else if (s === 'categories') {
                             state.categories.forEach(cat => {
@@ -597,6 +705,9 @@
                                 }
                             });
                         }
+                        else if (s === 'social' && state.settings.toggles?.showSocialSection) {
+                            html += renderSocialSection();
+                        }
                     });
                 }
                 document.getElementById('app').innerHTML = html;
@@ -604,11 +715,14 @@
             components: {
                 movieCard: (movie, isBackdrop) => {
                     const aspect = isBackdrop ? 'aspect-video' : 'aspect-poster';
+                    const langBadge = movie.language ? `<span class="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-1 rounded backdrop-blur uppercase">${movie.language}</span>` : '';
+                    
                     return `
-                        <div class="relative group cursor-pointer bg-gray-800 rounded-xl overflow-hidden shadow-lg transition hover:shadow-primary/20 hover:-translate-y-1" onclick="ui.openMovie('${movie.id}')">
-                            <div class="${aspect} overflow-hidden relative">
+                        <div class="relative group cursor-pointer bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg transition hover:shadow-primary/20 hover:-translate-y-1 border border-gray-200 dark:border-gray-700" onclick="ui.openMovie('${movie.id}')">
+                            <div class="${aspect} overflow-hidden relative bg-gray-300 dark:bg-gray-700">
                                 <img src="${movie.posterUrl}" alt="${utils.sanitize(movie.title)}" loading="lazy" 
                                     class="w-full h-full object-cover transition duration-500 group-hover:scale-110 group-hover:opacity-75">
+                                ${langBadge}
                                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                                     <div class="bg-white/20 backdrop-blur rounded-full p-3">
                                         <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
@@ -616,8 +730,8 @@
                                 </div>
                             </div>
                             <div class="p-3">
-                                <h3 class="font-semibold text-gray-100 truncate text-sm md:text-base">${utils.sanitize(movie.title)}</h3>
-                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <h3 class="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm md:text-base">${utils.sanitize(movie.title)}</h3>
+                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     <span>${movie.year}</span>
                                     <span>${movie.categorySlugs?.[0] || 'Movie'}</span>
                                 </div>
@@ -633,12 +747,13 @@
                 document.getElementById('movie-modal-title').innerText = m.title;
                 document.getElementById('movie-modal-desc').innerText = m.description;
                 document.getElementById('movie-modal-year').innerText = m.year;
+                document.getElementById('movie-modal-lang').innerText = m.language || 'EN';
                 document.getElementById('movie-modal-rating').innerText = `★ ${m.trendingScore || '-'}`;
                 document.getElementById('movie-modal-poster').style.backgroundImage = `url('${m.posterUrl}')`;
                 document.getElementById('movie-modal-watch').href = m.watchUrl;
                 
                 const dlBtn = document.getElementById('movie-modal-download');
-                if (m.downloadUrl && state.settings.toggles.allowDownloads !== false) { 
+                if (m.downloadUrl && state.settings.toggles?.allowDownloads !== false) { 
                      dlBtn.href = m.downloadUrl;
                      dlBtn.classList.remove('hidden');
                 } else {
@@ -686,14 +801,7 @@
                     ui.toggleModal('auth-modal', false);
                 } catch (error) {
                     console.error("Auth Error:", error);
-                    let msg = "Authentication failed.";
-                    if (error.code === 'auth/wrong-password') msg = "Incorrect password.";
-                    else if (error.code === 'auth/user-not-found') msg = "Account not found.";
-                    else if (error.code === 'auth/email-already-in-use') msg = "Email already registered.";
-                    else if (error.code === 'auth/weak-password') msg = "Password should be at least 6 characters.";
-                    else if (error.code === 'auth/invalid-email') msg = "Invalid email address.";
-                    
-                    errEl.innerText = msg;
+                    errEl.innerText = error.message.replace('Firebase:', '').trim();
                     errEl.classList.remove('hidden');
                 } finally {
                     btn.disabled = false;
@@ -715,42 +823,37 @@
 
         // NOTIFICATION SYSTEM
         const notifManager = {
+            init: () => {
+                const delay = (state.settings?.notificationDelaySeconds || 5) * 1000;
+                setTimeout(() => notifManager.check(), delay);
+            },
             check: async () => {
                 if (!state.notifications.length) return;
                 
-                // Get eligible notifications (enabled, active date)
-                const now = new Date();
-                const eligible = state.notifications.filter(n => {
-                    if (!n.enabled) return false;
-                    // TODO: Add date check if startAt/endAt exists
-                    return true;
-                }).sort((a,b) => (b.priority || 0) - (a.priority || 0)); // High priority first
+                // Get eligible notifications (enabled, high priority first)
+                const eligible = state.notifications
+                    .filter(n => n.enabled)
+                    .sort((a,b) => (b.priority || 0) - (a.priority || 0));
 
                 if (!eligible.length) return;
 
-                // Check view counts
                 let viewCounts = {};
-                try {
-                    viewCounts = JSON.parse(localStorage.getItem('notifViews') || '{}');
-                } catch(e){}
+                try { viewCounts = JSON.parse(localStorage.getItem('notifViews') || '{}'); } catch(e){}
 
-                // If user logged in, we could fetch from Firestore profile here, but using LS for speed/simplicity in this demo
-                
                 for (const note of eligible) {
                     const views = viewCounts[note.id] || 0;
                     if (views < (note.maxShows || 1)) {
-                        // Show this one
                         notifManager.show(note);
+                        
                         // Increment
                         viewCounts[note.id] = views + 1;
                         localStorage.setItem('notifViews', JSON.stringify(viewCounts));
                         
                         if(state.user) {
-                             // Sync to firestore background
                              const ref = doc(db, `profiles/${state.user.uid}/notifViews/${note.id}`);
                              setDoc(ref, { count: increment(1), lastShown: serverTimestamp() }, { merge: true });
                         }
-                        break; // Only show one per session/load
+                        break; // Only show one per session load
                     }
                 }
             },
@@ -774,32 +877,46 @@
                     btn.classList.add('hidden');
                 }
                 
-                setTimeout(() => ui.toggleModal('notif-modal', true), 1000); // Slight delay
+                ui.toggleModal('notif-modal', true);
             }
         };
 
         // DATA LAYER
         const data = {
-            init: () => {
-                // 1. Settings (Critical)
-                onSnapshot(doc(db, "settings", "global"), (docSnap) => {
+            init: async () => {
+                // 1. Settings (Critical with Self-Heal)
+                onSnapshot(doc(db, "settings", "global"), async (docSnap) => {
                     if (docSnap.exists()) {
                         state.settings = docSnap.data();
-                        state.settingsLoaded = true;
                         
-                        // Dynamic Admin Check based on array in settings
-                        if (state.user && state.settings.admins && Array.isArray(state.settings.admins)) {
-                            state.isAdmin = state.settings.admins.includes(state.user.email);
-                        } else {
-                            state.isAdmin = false;
+                        // Merge missing defaults safely
+                        if (!state.settings.toggles || !state.settings.admins) {
+                             await setDoc(doc(db, "settings", "global"), DEFAULT_SETTINGS, { merge: true });
                         }
-
-                        ui.updateAuthUI();
-                        ui.applySettings();
-
-                        // Now that we know if admin, load movies/cats
-                        data.loadContent();
+                    } else {
+                        // Create Default
+                        await setDoc(doc(db, "settings", "global"), DEFAULT_SETTINGS);
+                        state.settings = DEFAULT_SETTINGS;
                     }
+                    
+                    state.settingsLoaded = true;
+                    
+                    // Admin Check (Case Insensitive + Bootstrap)
+                    if (state.user) {
+                        const email = state.user.email.toLowerCase();
+                        const adminList = (state.settings.admins || []).map(a => a.toLowerCase());
+                        state.isAdmin = (email === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()) || adminList.includes(email);
+                    } else {
+                        state.isAdmin = false;
+                    }
+
+                    ui.updateAuthUI();
+                    ui.applySettings();
+                    data.loadContent();
+                    
+                    // Start notification timer
+                    if(!state.isAdmin) notifManager.init();
+
                 });
             },
             loadContent: () => {
@@ -811,31 +928,21 @@
                 });
 
                 // Movies
-                // NOTE: Using two different queries to satisfy security rules
-                let q;
-                if (state.isAdmin) {
-                    q = query(collection(db, "movies"), orderBy("createdAt", "desc"));
-                } else {
-                    q = query(collection(db, "movies"), where("status", "==", "published"), orderBy("createdAt", "desc"));
-                }
+                // Fallback for sorting if index missing
+                let q = query(collection(db, "movies")); 
+                // We fetch all then sort in JS to avoid complex composite index issues for the user
                 
-                // Unsubscribe previous if exists (simplified here by just overwriting)
                 onSnapshot(q, (snap) => {
                     state.movies = snap.docs.map(d => ({id: d.id, ...d.data()}));
                     ui.renderHome();
                     if(state.isAdmin) admin.renderMoviesList();
                 });
 
-                // Notifications (Public reads all enabled, rules filter this usually, but here we query all and filter in JS or rules)
-                // For admin simplicity we query all
-                const notifQ = state.isAdmin 
-                    ? query(collection(db, "notifications"), orderBy("createdAt", "desc"))
-                    : query(collection(db, "notifications"), where("enabled", "==", true));
-
+                // Notifications
+                const notifQ = query(collection(db, "notifications"));
                 onSnapshot(notifQ, (snap) => {
                     state.notifications = snap.docs.map(d => ({id: d.id, ...d.data()}));
                     if(state.isAdmin) admin.renderNotifList();
-                    else notifManager.check(); // Check if we should pop up
                 });
             }
         };
@@ -846,23 +953,26 @@
                 document.querySelectorAll('.admin-content').forEach(el => el.classList.add('hidden'));
                 document.getElementById(`tab-${tab}`).classList.remove('hidden');
                 document.querySelectorAll('.admin-tab').forEach(t => {
-                    t.classList.remove('border-b-2', 'border-primary', 'text-white');
-                    t.classList.add('text-gray-400');
+                    t.classList.remove('border-b-2', 'border-primary');
+                    t.classList.remove('dark:text-white', 'text-gray-900');
+                    t.classList.add('text-gray-500', 'dark:text-gray-400');
                 });
                 const btn = document.querySelector(`button[data-tab="${tab}"]`);
-                btn.classList.add('border-b-2', 'border-primary', 'text-white');
-                btn.classList.remove('text-gray-400');
+                btn.classList.add('border-b-2', 'border-primary', 'dark:text-white', 'text-gray-900');
+                btn.classList.remove('text-gray-500', 'dark:text-gray-400');
 
                 if(tab === 'settings') admin.renderSettingsForm();
             },
             renderMoviesList: () => {
-                const html = state.movies.map(m => `
-                    <tr class="hover:bg-gray-800 transition border-b border-gray-800">
-                        <td class="p-3 font-medium text-white">${utils.sanitize(m.title)} <span class="text-xs text-gray-500 block">${m.year}</span></td>
-                        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${m.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'}">${m.status}</span></td>
+                // Sort by createdAt desc for admin
+                const sorted = [...state.movies].sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+                const html = sorted.map(m => `
+                    <tr class="hover:bg-gray-100 dark:hover:bg-gray-700 transition border-b border-gray-200 dark:border-gray-700">
+                        <td class="p-3 font-medium text-gray-900 dark:text-white">${utils.sanitize(m.title)} <span class="text-xs text-gray-500 block">${m.year} • ${m.language || 'en'}</span></td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${m.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${m.status}</span></td>
                         <td class="p-3">
-                            <button onclick="admin.openMovieEditor('${m.id}')" class="text-blue-400 hover:text-white mr-3">Edit</button>
-                            <button onclick="admin.deleteMovie('${m.id}')" class="text-red-400 hover:text-white">Del</button>
+                            <button onclick="admin.openMovieEditor('${m.id}')" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-white mr-3">Edit</button>
+                            <button onclick="admin.deleteMovie('${m.id}')" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-white">Del</button>
                         </td>
                     </tr>
                 `).join('');
@@ -873,13 +983,13 @@
                 form.reset();
                 document.getElementById('edit-id').value = id || '';
                 document.getElementById('editor-title').innerText = id ? 'Edit Movie' : 'Add Movie';
-                
-                // Cats
+                document.getElementById('upload-status-movie').innerText = '';
+
                 const catContainer = document.getElementById('edit-categories');
                 catContainer.innerHTML = state.categories.map(cat => `
-                    <label class="inline-flex items-center space-x-2 bg-gray-800 px-3 py-1 rounded cursor-pointer border border-gray-700">
-                        <input type="checkbox" name="cat" value="${cat.slug}" class="form-checkbox text-primary rounded bg-gray-700 border-none">
-                        <span class="text-xs text-gray-300">${cat.name}</span>
+                    <label class="inline-flex items-center space-x-2 bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded cursor-pointer border border-gray-300 dark:border-gray-600">
+                        <input type="checkbox" name="cat" value="${cat.slug}" class="form-checkbox text-primary rounded bg-gray-100 dark:bg-gray-600 border-none">
+                        <span class="text-xs text-gray-800 dark:text-gray-300">${cat.name}</span>
                     </label>
                 `).join('');
 
@@ -888,6 +998,7 @@
                     if(m) {
                         document.getElementById('edit-title').value = m.title;
                         document.getElementById('edit-year').value = m.year;
+                        document.getElementById('edit-lang').value = m.language || 'en';
                         document.getElementById('edit-desc').value = m.description;
                         document.getElementById('edit-watchUrl').value = m.watchUrl;
                         document.getElementById('edit-downloadUrl').value = m.downloadUrl || '';
@@ -910,9 +1021,10 @@
                 
                 try {
                     const id = document.getElementById('edit-id').value;
-                    const data = {
+                    const docData = {
                         title: document.getElementById('edit-title').value,
                         year: parseInt(document.getElementById('edit-year').value),
+                        language: document.getElementById('edit-lang').value,
                         description: document.getElementById('edit-desc').value,
                         watchUrl: document.getElementById('edit-watchUrl').value,
                         downloadUrl: document.getElementById('edit-downloadUrl').value,
@@ -923,15 +1035,17 @@
                         updatedAt: serverTimestamp()
                     };
 
-                    if(id) await updateDoc(doc(db, "movies", id), data);
-                    else {
-                        data.createdAt = serverTimestamp();
-                        await addDoc(collection(db, "movies"), data);
+                    if(id) {
+                         await updateDoc(doc(db, "movies", id), docData);
+                    } else {
+                        docData.createdAt = serverTimestamp();
+                        await addDoc(collection(db, "movies"), docData);
                     }
                     ui.toggleModal('editor-modal', false);
-                    utils.showToast('Movie saved');
+                    utils.showToast('Movie saved successfully');
                 } catch(err) {
-                    alert(err.message);
+                    console.error(err);
+                    utils.showToast('Error saving movie: ' + err.message, 'error');
                 } finally {
                     btn.disabled = false;
                     btn.innerText = 'Save Movie';
@@ -940,17 +1054,19 @@
             deleteMovie: async (id) => {
                 if(confirm("Delete permanently?")) await deleteDoc(doc(db, "movies", id));
             },
-            // Upload Logic
-            handleUpload: async (input, targetId) => {
+            handleUpload: async (input, targetId, statusId) => {
                 const file = input.files[0];
                 if (!file) return;
                 
-                const status = input.parentElement.querySelector('p') || document.getElementById('upload-status-movie');
-                status.innerText = "Uploading...";
+                const status = document.getElementById(statusId);
+                if(status) status.innerText = "Uploading...";
                 
                 try {
+                    // NOTE: If this fails, user must ensure backend is setup or use client-side generation (not recommended for prod but ok for demo)
+                    // For this Single File solution without backend, if AUTH fails, we can't upload.
+                    // Assuming user has set up the endpoint as per their previous code.
                     const authRes = await fetch(IK_AUTH_ENDPOINT);
-                    if (!authRes.ok) throw new Error("Auth Server Error");
+                    if (!authRes.ok) throw new Error("Auth Endpoint Failed");
                     const authData = await authRes.json();
 
                     const imagekit = new ImageKit({ publicKey: IK_PUBLIC_KEY, urlEndpoint: IK_URL_ENDPOINT });
@@ -969,24 +1085,24 @@
                     });
                     
                     document.getElementById(targetId).value = res.url;
-                    status.innerText = "Done!";
+                    if(status) status.innerText = "Done!";
                 } catch(e) {
                     console.error(e);
-                    status.innerText = "Error!";
-                    alert("Upload failed. Check console.");
+                    if(status) status.innerText = "Upload Error!";
+                    alert("Upload failed. Ensure /api/imagekit-auth exists or check console.");
                 }
             },
-            // Settings
             renderSettingsForm: () => {
-                const s = state.settings;
-                document.getElementById('set-siteName').value = s.siteName || '';
-                document.getElementById('set-logoUrl').value = s.logoUrl || '';
-                document.getElementById('set-heroTitle').value = s.heroTitle || '';
-                document.getElementById('set-heroSubtitle').value = s.heroSubtitle || '';
-                document.getElementById('set-primaryColor').value = s.theme?.primaryColor || '#3b82f6';
-                document.getElementById('set-posterStyle').value = s.posterStyle || 'poster';
-                document.getElementById('set-sectionOrder').value = (s.sectionOrder || []).join(', ');
+                const s = state.settings || DEFAULT_SETTINGS;
+                // Text Fields
+                ['siteName','logoUrl','heroTitle','heroSubtitle','posterStyle'].forEach(f => {
+                    document.getElementById(`set-${f}`).value = s[f] || '';
+                });
                 
+                document.getElementById('set-primaryColor').value = s.theme?.primaryColor || '#3b82f6';
+                document.getElementById('set-sectionOrder').value = (s.sectionOrder || []).join(', ');
+                document.getElementById('set-notifDelay').value = s.notificationDelaySeconds || 5;
+
                 // Social
                 document.getElementById('set-social-youtube').value = s.socialLinks?.youtube || '';
                 document.getElementById('set-social-telegram').value = s.socialLinks?.telegram || '';
@@ -995,7 +1111,7 @@
                 // Admins
                 document.getElementById('set-admins').value = (s.admins || []).join(', ');
 
-                // Featured Movie Dropdown
+                // Featured Movie
                 const featSel = document.getElementById('set-featuredMovie');
                 featSel.innerHTML = '<option value="">-- Auto (First Published) --</option>' + 
                     state.movies.filter(m => m.status === 'published').map(m => `
@@ -1004,9 +1120,10 @@
 
                 // Toggles
                 const togglesDiv = document.getElementById('set-toggles');
-                togglesDiv.innerHTML = Object.keys(s.toggles || {}).map(k => `
-                    <label class="flex items-center space-x-2 text-sm text-gray-300">
-                        <input type="checkbox" id="toggle-${k}" ${s.toggles[k] ? 'checked' : ''} class="rounded bg-gray-700 border-none text-primary">
+                const safeToggles = s.toggles || DEFAULT_SETTINGS.toggles;
+                togglesDiv.innerHTML = Object.keys(safeToggles).map(k => `
+                    <label class="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input type="checkbox" id="toggle-${k}" ${safeToggles[k] ? 'checked' : ''} class="rounded bg-gray-200 dark:bg-gray-700 border-none text-primary">
                         <span class="capitalize">${k.replace(/([A-Z])/g, ' $1')}</span>
                     </label>
                 `).join('');
@@ -1014,11 +1131,18 @@
             saveSettings: async () => {
                 const s = state.settings;
                 const newToggles = {};
-                Object.keys(s.toggles).forEach(k => {
-                    newToggles[k] = document.getElementById(`toggle-${k}`).checked;
-                });
+                if(s.toggles) {
+                    Object.keys(s.toggles).forEach(k => {
+                        const el = document.getElementById(`toggle-${k}`);
+                        if(el) newToggles[k] = el.checked;
+                    });
+                }
 
-                const adminsArr = document.getElementById('set-admins').value.split(',').map(e => e.trim()).filter(e => e);
+                const adminsArr = document.getElementById('set-admins').value.split(',').map(e => e.trim().toLowerCase()).filter(e => e);
+                // Ensure bootstrap admin is always there
+                if (!adminsArr.includes(BOOTSTRAP_ADMIN_EMAIL.toLowerCase())) {
+                    adminsArr.push(BOOTSTRAP_ADMIN_EMAIL.toLowerCase());
+                }
 
                 const updateData = {
                     siteName: document.getElementById('set-siteName').value,
@@ -1028,6 +1152,7 @@
                     featuredMovieId: document.getElementById('set-featuredMovie').value,
                     posterStyle: document.getElementById('set-posterStyle').value,
                     sectionOrder: document.getElementById('set-sectionOrder').value.split(',').map(x => x.trim()),
+                    notificationDelaySeconds: parseInt(document.getElementById('set-notifDelay').value) || 5,
                     socialLinks: {
                         youtube: document.getElementById('set-social-youtube').value,
                         telegram: document.getElementById('set-social-telegram').value,
@@ -1038,47 +1163,42 @@
                     toggles: newToggles
                 };
 
-                await updateDoc(doc(db, "settings", "global"), updateData);
-                utils.showToast("Settings Updated");
-                // Reload window to reflect critical logic changes (like admin list)
-                setTimeout(() => window.location.reload(), 1000);
+                await setDoc(doc(db, "settings", "global"), updateData, {merge: true});
+                utils.showToast("Settings Updated. Reloading...");
+                setTimeout(() => window.location.reload(), 1500);
             },
             // Categories
             renderCategoriesList: () => {
                 document.getElementById('admin-categories-list').innerHTML = state.categories.map(cat => `
-                    <div class="flex items-center justify-between bg-gray-800 p-3 rounded border border-gray-700">
+                    <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 shadow-sm">
                         <div class="flex items-center gap-3">
-                            <span class="text-white font-bold">${cat.order || 0}</span>
-                            <span class="text-gray-300">${cat.name}</span>
-                            <span class="text-xs bg-gray-700 px-2 rounded ${cat.enabled?'text-green-400':'text-red-400'}">${cat.enabled?'On':'Off'}</span>
+                            <span class="text-gray-900 dark:text-white font-bold">${cat.order || 0}</span>
+                            <span class="text-gray-700 dark:text-gray-300">${cat.name}</span>
+                            <span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 rounded ${cat.enabled?'text-green-600':'text-red-500'}">${cat.enabled?'On':'Off'}</span>
                         </div>
                         <div class="gap-2 flex">
-                            <button onclick="admin.moveCat('${cat.id}', -1)" class="text-gray-400 hover:text-white">↑</button>
-                            <button onclick="admin.moveCat('${cat.id}', 1)" class="text-gray-400 hover:text-white">↓</button>
-                            <button onclick="admin.toggleCat('${cat.id}', ${!cat.enabled})" class="text-blue-400 text-xs">Toggle</button>
-                            <button onclick="admin.deleteCat('${cat.id}')" class="text-red-400 text-xs">Del</button>
+                            <button onclick="admin.moveCat('${cat.id}', -1)" class="text-gray-400 hover:text-gray-900 dark:hover:text-white">↑</button>
+                            <button onclick="admin.moveCat('${cat.id}', 1)" class="text-gray-400 hover:text-gray-900 dark:hover:text-white">↓</button>
+                            <button onclick="admin.toggleCat('${cat.id}', ${!cat.enabled})" class="text-blue-500 text-xs">Toggle</button>
+                            <button onclick="admin.deleteCat('${cat.id}')" class="text-red-500 text-xs">Del</button>
                         </div>
                     </div>
                 `).join('');
             },
             addCategory: async () => {
-                const name = prompt("Name:");
+                const name = prompt("Category Name:");
                 if(!name) return;
                 await addDoc(collection(db, "categories"), {
                     name, slug: utils.slugify(name), enabled: true, order: state.categories.length + 1
                 });
             },
             moveCat: async (id, dir) => {
-                // Simplified bubble sort swap for demo
                 const idx = state.categories.findIndex(c => c.id === id);
                 if (idx < 0) return;
                 const targetIdx = idx + dir;
                 if (targetIdx < 0 || targetIdx >= state.categories.length) return;
-                
                 const c1 = state.categories[idx];
                 const c2 = state.categories[targetIdx];
-                
-                // Swap orders
                 await updateDoc(doc(db, "categories", c1.id), { order: c2.order });
                 await updateDoc(doc(db, "categories", c2.id), { order: c1.order });
             },
@@ -1088,17 +1208,17 @@
             // Notifications
             renderNotifList: () => {
                 document.getElementById('admin-notif-list').innerHTML = state.notifications.map(n => `
-                    <div class="bg-gray-800 p-4 rounded border border-gray-700 flex justify-between items-center">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded border border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm">
                         <div>
-                            <div class="font-bold text-white flex items-center gap-2">
+                            <div class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 ${n.title}
-                                <span class="text-xs px-2 rounded ${n.enabled?'bg-green-900 text-green-300':'bg-red-900 text-red-300'}">${n.enabled?'Active':'Inactive'}</span>
+                                <span class="text-xs px-2 rounded ${n.enabled?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}">${n.enabled?'Active':'Inactive'}</span>
                             </div>
-                            <div class="text-xs text-gray-400 mt-1">Priority: ${n.priority || 0} | Views: ${n.maxShows}</div>
+                            <div class="text-xs text-gray-500 mt-1">Priority: ${n.priority || 0} | Max Views: ${n.maxShows}</div>
                         </div>
                         <div>
-                            <button onclick="admin.openNotifEditor('${n.id}')" class="text-blue-400 mr-3">Edit</button>
-                            <button onclick="admin.deleteNotif('${n.id}')" class="text-red-400">Del</button>
+                            <button onclick="admin.openNotifEditor('${n.id}')" class="text-blue-500 mr-3">Edit</button>
+                            <button onclick="admin.deleteNotif('${n.id}')" class="text-red-500">Del</button>
                         </div>
                     </div>
                 `).join('');
@@ -1107,6 +1227,7 @@
                 document.getElementById('notif-form').reset();
                 document.getElementById('notif-id').value = id || '';
                 document.getElementById('notif-editor-title').innerText = id ? "Edit" : "Create";
+                document.getElementById('upload-status-notif').innerText = '';
                 
                 if (id) {
                     const n = state.notifications.find(x => x.id === id);
@@ -1124,11 +1245,14 @@
             },
             deleteNotif: async (id) => { if(confirm("Del?")) deleteDoc(doc(db, "notifications", id)); }
         };
-        // Notification Form Handler
+
+        // EVENT HANDLERS
+        document.getElementById('auth-form').addEventListener('submit', authManager.handleAuth);
+        document.getElementById('movie-form').addEventListener('submit', admin.handleMovieSave);
         document.getElementById('notif-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('notif-id').value;
-            const data = {
+            const docData = {
                 title: document.getElementById('notif-edit-title').value,
                 message: document.getElementById('notif-edit-message').value,
                 imageUrl: document.getElementById('notif-edit-imageUrl').value,
@@ -1138,9 +1262,35 @@
                 enabled: document.getElementById('notif-edit-enabled').checked,
                 updatedAt: serverTimestamp()
             };
-            if(id) await updateDoc(doc(db, "notifications", id), data);
-            else { data.createdAt = serverTimestamp(); await addDoc(collection(db, "notifications"), data); }
+            if(id) await updateDoc(doc(db, "notifications", id), docData);
+            else { docData.createdAt = serverTimestamp(); await addDoc(collection(db, "notifications"), docData); }
             ui.toggleModal('notif-editor-modal', false);
+        });
+        
+        // Theme Toggle
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            document.getElementById('theme-icon').innerText = isDark ? '🌙' : '☀️';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+        // Set initial icon
+        document.getElementById('theme-icon').innerText = document.documentElement.classList.contains('dark') ? '🌙' : '☀️';
+
+        // Filter Inputs
+        ['global-search', 'filter-lang', 'filter-year'].forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                if(id === 'global-search') state.filter = e.target.value;
+                if(id === 'filter-lang') state.filterLang = e.target.value;
+                if(id === 'filter-year') state.filterYear = e.target.value;
+                ui.renderHome();
+            });
+            // Mobile search sync
+            if(id === 'global-search') {
+                document.getElementById('mobile-search').addEventListener('input', (e) => {
+                    state.filter = e.target.value;
+                    ui.renderHome();
+                });
+            }
         });
 
         // GLOBAL EXPORTS
@@ -1154,29 +1304,17 @@
                         document.getElementById('admin-panel').classList.remove('hidden');
                         admin.switchTab('movies');
                     }
-                } else {
+                } else if (path === 'home') {
                     document.getElementById('admin-panel').classList.add('hidden');
                 }
             }
         };
 
-        // EVENTS
-        document.getElementById('auth-form').addEventListener('submit', authManager.handleAuth);
-        document.getElementById('movie-form').addEventListener('submit', admin.handleMovieSave);
-        document.getElementById('theme-toggle').addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-        });
-        document.getElementById('global-search').addEventListener('input', (e) => {
-            state.filter = e.target.value;
-            ui.renderHome();
-        });
-
         // INIT AUTH
         onAuthStateChanged(auth, (u) => {
             state.user = u;
-            data.init(); // Data init handles the rest
+            data.init();
         });
-
     </script>
 </body>
 </html>
